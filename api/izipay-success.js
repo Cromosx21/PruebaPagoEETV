@@ -1,4 +1,3 @@
-import getRawBody from "raw-body";
 import { createHmac } from "node:crypto";
 
 export default async function handler(req, res) {
@@ -8,12 +7,28 @@ export default async function handler(req, res) {
 	}
 	const shaKey = process.env.IZIPAY_SHA256_KEY || "";
 	try {
-		const raw = await getRawBody(req);
-		const parsed = new URLSearchParams(raw.toString());
+		let rawBuf;
+		if (req.body && typeof req.body === "string") {
+			rawBuf = Buffer.from(req.body);
+		} else if (req.body && typeof req.body === "object") {
+			const usp = new URLSearchParams(req.body);
+			rawBuf = Buffer.from(usp.toString());
+		} else {
+			rawBuf = await new Promise((resolve, reject) => {
+				const chunks = [];
+				req.on("data", (c) => chunks.push(c));
+				req.on("end", () => resolve(Buffer.concat(chunks)));
+				req.on("error", (err) => reject(err));
+			});
+		}
+		const parsed = new URLSearchParams(rawBuf.toString());
 		const answerStr = parsed.get("kr-answer") || "";
 		const hash = parsed.get("kr-hash") || "";
 		if (!answerStr || !hash) {
-			res.status(400).send("Missing payment data");
+			res.setHeader("Content-Type", "text/html; charset=utf-8");
+			res.status(400).send(
+				"<!DOCTYPE html><html><body><h1>Datos incompletos</h1><p>Faltan parámetros de la transacción.</p></body></html>"
+			);
 			return;
 		}
 		if (shaKey) {
