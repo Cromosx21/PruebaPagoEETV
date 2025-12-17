@@ -6,9 +6,10 @@ export default async function handler(req, res) {
 	const apiBase = process.env.IZIPAY_API_BASE || "https://api.micuentaweb.pe";
 	const user = process.env.IZIPAY_REST_USER;
 	const pass = process.env.IZIPAY_REST_PASSWORD;
-	if (!user || !pass) {
+	const publicKey = process.env.IZIPAY_PUBLIC_KEY;
+	if (!user || !pass || !publicKey) {
 		res.status(500).json({
-			error: "Izipay REST not configured: missing user/password",
+			error: "Izipay REST not configured: missing user/password/publicKey",
 		});
 		return;
 	}
@@ -81,11 +82,17 @@ export default async function handler(req, res) {
 			answer.redirectionUrl ||
 			answer.paymentPageUrl ||
 			null;
+		const formToken = answer.formToken || null;
+		const paymentPageUrl =
+			answer.paymentPageUrl || answer.redirectionUrl || null;
 		res.status(200).json({
 			status: data.status,
 			orderId,
 			qrBase64,
 			qrUrl,
+			formToken,
+			publicKey,
+			paymentPageUrl,
 			raw: data,
 		});
 	} catch {

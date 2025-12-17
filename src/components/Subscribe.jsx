@@ -259,43 +259,172 @@ export default function Subscribe() {
 												setStatus(base + more);
 												return;
 											}
-											const { qrBase64, qrUrl } =
-												data || {};
-											if (!qrBase64 && !qrUrl) {
+											const {
+												qrBase64,
+												qrUrl,
+												formToken,
+												publicKey,
+												paymentPageUrl,
+												raw,
+											} = data || {};
+											if (
+												!qrBase64 &&
+												!qrUrl &&
+												!formToken &&
+												!paymentPageUrl
+											) {
 												setStatus(
-													"El proveedor no devolvió datos de QR"
+													"El proveedor no devolvió datos de QR; detalles en consola"
+												);
+												console.log(
+													"Izipay QR raw:",
+													raw
 												);
 												return;
 											}
 											if (qrContainerRef.current) {
-												const img =
-													document.createElement(
-														"img"
+												if (qrBase64 || qrUrl) {
+													const img =
+														document.createElement(
+															"img"
+														);
+													img.alt =
+														"QR de pago Izipay";
+													img.className =
+														"mx-auto max-w-[220px] rounded border";
+													if (qrBase64) {
+														img.src =
+															"data:image/png;base64," +
+															qrBase64;
+													} else {
+														img.src = qrUrl;
+													}
+													qrContainerRef.current.appendChild(
+														img
 													);
-												img.alt = "QR de pago Izipay";
-												img.className =
-													"mx-auto max-w-[220px] rounded border";
-												if (qrBase64) {
-													img.src =
-														"data:image/png;base64," +
-														qrBase64;
-												} else {
-													img.src = qrUrl;
+													const help =
+														document.createElement(
+															"div"
+														);
+													help.className =
+														"mt-2 text-center text-sm text-slate-600";
+													help.textContent =
+														"Escanea el QR con Yape o Plin para completar tu pago.";
+													qrContainerRef.current.appendChild(
+														help
+													);
+												} else if (
+													formToken &&
+													publicKey
+												) {
+													const embedded =
+														document.createElement(
+															"div"
+														);
+													embedded.className =
+														"kr-embedded";
+													embedded.setAttribute(
+														"kr-form-token",
+														formToken
+													);
+													const btn =
+														document.createElement(
+															"button"
+														);
+													btn.className =
+														"kr-payment-button";
+													const err =
+														document.createElement(
+															"div"
+														);
+													err.className =
+														"kr-form-error";
+													embedded.appendChild(btn);
+													embedded.appendChild(err);
+													qrContainerRef.current.appendChild(
+														embedded
+													);
+													const css =
+														document.createElement(
+															"link"
+														);
+													css.rel = "stylesheet";
+													css.href =
+														"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
+													document.head.appendChild(
+														css
+													);
+													const script =
+														document.createElement(
+															"script"
+														);
+													script.src =
+														"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
+													script.setAttribute(
+														"kr-public-key",
+														publicKey
+													);
+													script.setAttribute(
+														"kr-post-url-success",
+														"/api/izipay-success"
+													);
+													script.setAttribute(
+														"kr-get-url-refused",
+														"/?payment=refused"
+													);
+													script.setAttribute(
+														"kr-language",
+														"es-ES"
+													);
+													script.onload = () => {
+														setStatus("");
+													};
+													script.onerror = () => {
+														setStatus(
+															"No se pudo cargar la pasarela de Izipay"
+														);
+													};
+													document.head.appendChild(
+														script
+													);
+													const help =
+														document.createElement(
+															"div"
+														);
+													help.className =
+														"mt-2 text-center text-sm text-slate-600";
+													help.textContent =
+														"Completa el pago en la pasarela de Izipay.";
+													qrContainerRef.current.appendChild(
+														help
+													);
+												} else if (paymentPageUrl) {
+													const link =
+														document.createElement(
+															"a"
+														);
+													link.href = paymentPageUrl;
+													link.target = "_blank";
+													link.rel = "noopener";
+													link.className =
+														"inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md";
+													link.textContent =
+														"Abrir página de pago";
+													qrContainerRef.current.appendChild(
+														link
+													);
+													const help =
+														document.createElement(
+															"div"
+														);
+													help.className =
+														"mt-2 text-center text-sm text-slate-600";
+													help.textContent =
+														"Abre la página de pago para ver el QR.";
+													qrContainerRef.current.appendChild(
+														help
+													);
 												}
-												qrContainerRef.current.appendChild(
-													img
-												);
-												const help =
-													document.createElement(
-														"div"
-													);
-												help.className =
-													"mt-2 text-center text-sm text-slate-600";
-												help.textContent =
-													"Escanea el QR con Yape o Plin para completar tu pago.";
-												qrContainerRef.current.appendChild(
-													help
-												);
 											}
 											setStatus("");
 										} catch {
