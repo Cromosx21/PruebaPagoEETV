@@ -1,91 +1,80 @@
 # EasyEnglishTV
 
-Landing en React + Vite con pagos integrados para suscripciones, optimizada para despliegue en Vercel. Incluye:
+Landing en React + Vite con pagos para suscripciones, desplegable en Vercel.
 
 -   UI con TailwindCSS
--   Pago con Stripe Checkout (tarjeta, moneda PEN)
--   Pago con PayPal (wallet y tarjeta, moneda PEN)
--   Funciones serverless en `api/` para Stripe
+-   Pago con PayPal (wallet y tarjeta, moneda USD para Plan Único)
+-   Pago con Izipay (tarjeta, moneda PEN para Plan Único)
+-   Funciones serverless en `api/` para integración de pagos
 
 ## Estructura
 
 -   `src/components/` componentes de UI (Navbar, Hero, Schedule, Plans, Steps, Stats, Subscribe, Footer)
--   `src/lib/stripeClient.js` inicialización de Stripe en el cliente
--   `api/create-checkout-session.js` creación de sesión de pago en Stripe
--   `api/stripe-webhook.js` recepción y validación de eventos de Stripe
+-   `api/izipay-create-payment.js` inicia el pago y devuelve `formToken` para Krypton
+-   `api/izipay-success.js` recibe la respuesta de Izipay, valida hash y genera comprobante HTML
 -   `index.html`, `src/index.css`, `tailwind.config.js` configuración base
 
 ## Variables de entorno
 
-Configura estas variables antes de desplegar:
-
 Frontend:
 
--   `VITE_STRIPE_PUBLISHABLE_KEY`: clave pública de Stripe
--   `VITE_PAYPAL_CLIENT_ID`: client id de PayPal (Business, REST App)
+-   `VITE_PAYPAL_CLIENT_ID`: Client ID de PayPal (Business)
 
-Backend (Funciones Vercel/API):
+Backend:
 
--   `STRIPE_SECRET_KEY`: clave secreta de Stripe (test/production)
--   `STRIPE_WEBHOOK_SECRET`: secreto del webhook de Stripe
--   `VERCEL_URL`: lo establece Vercel automáticamente en producción
+-   `IZIPAY_API_BASE`: base de la API REST de Izipay (ej. `https://api.micuentaweb.pe`)
+-   `IZIPAY_REST_USER`: usuario REST de Izipay
+-   `IZIPAY_REST_PASSWORD`: contraseña REST de Izipay
+-   `IZIPAY_PUBLIC_KEY`: clave pública para Krypton (`<usuario>:<clave>`)
+-   `IZIPAY_SHA256_KEY`: clave para validar `kr-hash` en `/api/izipay-success`
 
-## Stripe (tarjeta)
+## Planes y montos
 
--   Moneda configurada en PEN (Perú) y montos definidos en centavos:
-    -   Plan Mensual: `999` (S/ 9.99)
-    -   Plan Único: `4900` (S/ 49.00)
--   Flujo:
-    1. Cliente hace click en “Pagar ahora” (panel Tarjeta Débito).
-    2. Front llama `POST /api/create-checkout-session` con `{ planId }`.
-    3. Backend crea sesión y el front redirige a Stripe Checkout.
-    4. Stripe redirige a `/?payment=success` o `/?payment=cancel`.
-    5. Webhook (`/api/stripe-webhook`) valida `checkout.session.completed`.
+-   Plan Mensual: solo suscripción vía redes sociales (no muestra medios de pago)
+-   Plan Único:
+    -   PayPal: `USD 50.00`
+    -   Izipay: `PEN 185.00`
 
-## PayPal (wallet y tarjeta)
+## Flujo de Izipay (tarjeta)
 
--   El SDK se carga con `VITE_PAYPAL_CLIENT_ID` y `currency=PEN`.
--   Dos botones:
-    -   Wallet estándar de PayPal.
-    -   Tarjeta vía PayPal (elegible según región).
--   Para configurar la cuenta destino:
-    1. Crea/usa una cuenta Business en [developer.paypal.com](https://developer.paypal.com).
-    2. Crea una App REST y copia el `Client ID` (modo sandbox o live).
-    3. Define `VITE_PAYPAL_CLIENT_ID` en Vercel (Environment Variables).
-    4. Despliega; el pago se enruta a la cuenta asociada a ese `Client ID`.
-    -   Nota: El `client-id=sb` es solo sandbox genérico; no está vinculado a tu cuenta. Reemplázalo por tu propio `Client ID`.
+1. En `Subscribe.jsx`, selecciona Plan Único y la marca de tarjeta (Visa/Mastercard/Amex/Diners).
+2. Ingresa el correo y pulsa “Pagar ahora (Tarjeta con Izipay)”.
+3. El front llama `POST /api/izipay-create-payment` con `{ planId, email }`.
+4. El backend devuelve `formToken` y se embebe el formulario Krypton (`kr-pan`, `kr-expiry`, `kr-security-code`, `kr-payment-button`).
+5. Al finalizar, Izipay POSTea a `/api/izipay-success`. Ahí se valida el hash y se renderiza el comprobante con:
+    - Fecha/hora en `es-PE`
+    - Orden y Número de transacción
+    - Marca y últimos 4 dígitos de la tarjeta
+    - Monto y moneda
 
-## Despliegue en Vercel
+## Flujo de PayPal
 
-1. Importa el repo en Vercel.
-2. Añade las variables de entorno.
-3. `Build Command`: `npm run build`
-4. `Output Directory`: `dist`
-5. Las funciones en `api/` se desplegarán automáticamente.
-6. Configura el webhook de Stripe apuntando a `https://tu-dominio/api/stripe-webhook` y usa el secreto en `STRIPE_WEBHOOK_SECRET`.
+-   El SDK se carga con `VITE_PAYPAL_CLIENT_ID`.
+-   Botón estándar (wallet) y botón de tarjeta (según elegibilidad regional).
+-   Montos en `USD` y descripción según plan.
 
 ## Desarrollo local
 
--   Instala dependencias: `npm install`
--   Dev server: `npm run dev` (sirve el front en `http://localhost:5173`)
+-   Instalar dependencias: `npm install`
+-   Servidor dev: `npm run dev` (http://localhost:5173)
 -   Lint: `npm run lint`
--   Para probar funciones `api/` junto con el front, usa `vercel dev`.
+-   Build: `npm run build`
+-   Con Vercel: `vercel dev` para probar funciones `api/` junto al front
 
-## Seguridad y cumplimiento
+## Despliegue
 
--   No se manejan datos de tarjeta en el servidor; Stripe Checkout y PayPal procesan los datos.
--   Valida firmas en webhook de Stripe.
--   Usa HTTPS en producción y configura `Content-Security-Policy`.
--   No expongas claves en el repositorio; usa variables de entorno.
+1. Configurar variables de entorno en Vercel (Project Settings → Environment Variables).
+2. `Build Command`: `npm run build`
+3. `Output Directory`: `dist`
+4. Desplegar. Las rutas `api/` quedan disponibles como funciones serverless.
 
-## Perú: Yape y Plin
+## Seguridad
 
--   No están integrados nativamente en Stripe/PayPal.
--   Proveedores locales (Niubiz, Izipay, Culqi) pueden soportar Yape/Plin.
--   Siguiente paso: añadir panel Yape/Plin y un endpoint en `api/` para iniciar cobros con el PSP elegido (requiere credenciales).
+-   No guardar secretos en el repositorio; usa variables de entorno.
+-   No manejar datos sensibles de tarjeta; Krypton/Izipay procesan en cliente.
+-   Validar la firma `kr-hash` en el backend.
 
 ## Personalización
 
--   Colores y estilos: `tailwind.config.js` y `src/index.css`.
--   Contenidos: edita los componentes en `src/components/`.
--   Montos y moneda: `api/create-checkout-session.js` y `Subscribe.jsx`.
+-   Colores y estilos: `tailwind.config.js` y `src/index.css`
+-   Contenidos: componentes en `src/components/`
