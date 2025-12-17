@@ -28,6 +28,7 @@ export default function Subscribe() {
 	const paypalContainerRef = useRef(null);
 	const cardContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
+	const qrContainerRef = useRef(null);
 	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
 	const isUnico = selected.id === "unico";
 
@@ -202,6 +203,112 @@ export default function Subscribe() {
 							</div>
 							<div className="mt-4" ref={cardContainerRef} />
 							<div className="mt-4" ref={izipayContainerRef} />
+							<div className="mt-4">
+								<button
+									className="w-full rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+									onClick={async () => {
+										if (selected.id !== "unico") {
+											setStatus(
+												"QR disponible solo para Plan Único"
+											);
+											return;
+										}
+										setStatus("Generando QR...");
+										if (qrContainerRef.current) {
+											qrContainerRef.current.innerHTML =
+												"";
+										}
+										const emailVal = String(
+											email || ""
+										).trim();
+										if (
+											!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+												emailVal
+											)
+										) {
+											setStatus(
+												"Ingresa un correo válido"
+											);
+											return;
+										}
+										const res = await fetch(
+											"/api/izipay-create-qr",
+											{
+												method: "POST",
+												headers: {
+													"Content-Type":
+														"application/json",
+												},
+												body: JSON.stringify({
+													planId: selected.id,
+													email: emailVal,
+													network: "YAPE",
+												}),
+											}
+										);
+										try {
+											const data = await res.json();
+											if (!res.ok) {
+												const base =
+													data?.error ||
+													"No se pudo generar el QR";
+												const more = data?.detail
+													?.message
+													? `: ${data.detail.message}`
+													: "";
+												setStatus(base + more);
+												return;
+											}
+											const { qrBase64, qrUrl } =
+												data || {};
+											if (!qrBase64 && !qrUrl) {
+												setStatus(
+													"El proveedor no devolvió datos de QR"
+												);
+												return;
+											}
+											if (qrContainerRef.current) {
+												const img =
+													document.createElement(
+														"img"
+													);
+												img.alt = "QR de pago Izipay";
+												img.className =
+													"mx-auto max-w-[220px] rounded border";
+												if (qrBase64) {
+													img.src =
+														"data:image/png;base64," +
+														qrBase64;
+												} else {
+													img.src = qrUrl;
+												}
+												qrContainerRef.current.appendChild(
+													img
+												);
+												const help =
+													document.createElement(
+														"div"
+													);
+												help.className =
+													"mt-2 text-center text-sm text-slate-600";
+												help.textContent =
+													"Escanea el QR con Yape o Plin para completar tu pago.";
+												qrContainerRef.current.appendChild(
+													help
+												);
+											}
+											setStatus("");
+										} catch {
+											setStatus(
+												"Error interpretando respuesta del QR"
+											);
+										}
+									}}
+								>
+									Generar QR (Yape/Plin)
+								</button>
+								<div className="mt-4" ref={qrContainerRef} />
+							</div>
 							<input
 								type="email"
 								value={email}
