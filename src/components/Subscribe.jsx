@@ -268,11 +268,11 @@ export default function Subscribe() {
 											publicKey
 										);
 										script.setAttribute(
-											"kr-post-url-success",
+											"kr-get-url-success",
 											"/?payment=success"
 										);
 										script.setAttribute(
-											"kr-post-url-refused",
+											"kr-get-url-refused",
 											"/?payment=refused"
 										);
 										script.setAttribute(
