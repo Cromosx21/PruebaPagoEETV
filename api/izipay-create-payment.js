@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 	const email = body.email || "cliente@example.com";
 	const plans = {
 		mensual: { name: "Plan Mensual", amount: 9.99, currency: "PEN" },
-		unico: { name: "Plan Único", amount: 49.0, currency: "PEN" },
+		unico: { name: "Plan Único", amount: 185.0, currency: "PEN" },
 	};
 	const plan = plans[planId] || plans.mensual;
 	const amountCents = Math.round(parseFloat(plan.amount) * 100);

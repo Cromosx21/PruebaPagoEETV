@@ -15,7 +15,7 @@ const PLANS = [
 	{
 		id: "unico",
 		name: "Plan Único",
-		amount: "49.00",
+		amount: "50.00",
 		currency: "USD",
 		color: "secondary",
 	},
@@ -29,6 +29,7 @@ export default function Subscribe() {
 	const cardContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
 	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
+	const isUnico = selected.id === "unico";
 
 	useEffect(() => {
 		const rawId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
@@ -51,6 +52,18 @@ export default function Subscribe() {
 
 		const renderButtons = async () => {
 			try {
+				if (selected.id !== "unico") {
+					setStatus("");
+					if (paypalContainerRef.current) {
+						paypalContainerRef.current.innerHTML =
+							'<div class="text-sm text-slate-600">Disponible solo para Plan Único</div>';
+					}
+					if (cardContainerRef.current) {
+						cardContainerRef.current.innerHTML =
+							'<div class="text-sm text-slate-600">Disponible solo para Plan Único</div>';
+					}
+					return;
+				}
 				await ensureSdk();
 				setStatus("");
 				if (paypalContainerRef.current) {
@@ -169,160 +182,222 @@ export default function Subscribe() {
 					))}
 				</div>
 
-				<div className="mt-10 grid md:grid-cols-3 gap-6">
-					<div className="rounded-2xl border bg-white p-6 shadow-sm">
-						<div className="text-lg font-semibold">
-							Pagar con PayPal
+				{isUnico ? (
+					<div className="mt-10 grid md:grid-cols-3 gap-6">
+						<div className="rounded-2xl border bg-white p-6 shadow-sm">
+							<div className="text-lg font-semibold">
+								Pagar con PayPal
+							</div>
+							<div className="mt-1 text-sm text-slate-600">
+								Pagos procesados en USD
+							</div>
+							<div className="mt-4" ref={paypalContainerRef} />
 						</div>
-						<div className="mt-1 text-sm text-slate-600">
-							Pagos procesados en USD
-						</div>
-						<div className="mt-4" ref={paypalContainerRef} />
-					</div>
-					<div className="rounded-2xl border bg-white p-6 shadow-sm">
-						<div className="text-lg font-semibold">
-							Pagar con Yape y Plin (Izipay)
-						</div>
-						<div className="mt-1 text-sm text-slate-600">
-							Pagos procesados en PEN
-						</div>
-						<div className="mt-4" ref={cardContainerRef} />
-						<div className="mt-4" ref={izipayContainerRef} />
-						<input
-							type="email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							placeholder="Tu correo electrónico"
-							className="mt-4 w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-						/>
-						<button
-							className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-							onClick={async () => {
-								setStatus("");
-								const emailVal = String(email || "").trim();
-								if (
-									!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
-								) {
-									setStatus("Ingresa un correo válido");
-									return;
-								}
-								const res = await fetch(
-									"/api/izipay-create-payment",
-									{
-										method: "POST",
-										headers: {
-											"Content-Type": "application/json",
-										},
-										body: JSON.stringify({
-											planId: selected.id,
-											email: emailVal,
-										}),
-									}
-								);
-								try {
-									const data = await res.json();
-									if (!res.ok) {
-										const base =
-											data?.error ||
-											"No se pudo iniciar el pago con Izipay";
-										const more = data?.detail?.message
-											? `: ${data.detail.message}`
-											: "";
-										setStatus(base + more);
-										return;
-									}
-									const formToken = data?.formToken;
-									const publicKey = data?.publicKey;
-									if (!formToken || !publicKey) {
+						<div className="rounded-2xl border bg-white p-6 shadow-sm">
+							<div className="text-lg font-semibold">
+								Pagar con Yape y Plin (Izipay)
+							</div>
+							<div className="mt-1 text-sm text-slate-600">
+								Pagos procesados en PEN
+							</div>
+							<div className="mt-4" ref={cardContainerRef} />
+							<div className="mt-4" ref={izipayContainerRef} />
+							<input
+								type="email"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								placeholder="Tu correo electrónico"
+								className="mt-4 w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+							/>
+							<button
+								className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+								disabled={!isUnico}
+								onClick={async () => {
+									if (selected.id !== "unico") {
 										setStatus(
-											"Respuesta inválida del servidor de pagos"
+											"Pago disponible solo para Plan Único"
 										);
 										return;
 									}
-									if (izipayContainerRef.current) {
-										izipayContainerRef.current.innerHTML =
-											"";
-										const embedded =
-											document.createElement("div");
-										embedded.className = "kr-embedded";
-										embedded.setAttribute(
-											"kr-form-token",
-											formToken
-										);
-										const pan =
-											document.createElement("div");
-										pan.className = "kr-pan";
-										const expiry =
-											document.createElement("div");
-										expiry.className = "kr-expiry";
-										const cvv =
-											document.createElement("div");
-										cvv.className = "kr-security-code";
-										const btn =
-											document.createElement("button");
-										btn.className = "kr-payment-button";
-										const err =
-											document.createElement("div");
-										err.className = "kr-form-error";
-										embedded.appendChild(pan);
-										embedded.appendChild(expiry);
-										embedded.appendChild(cvv);
-										embedded.appendChild(btn);
-										embedded.appendChild(err);
-										izipayContainerRef.current.appendChild(
-											embedded
-										);
-										const css =
-											document.createElement("link");
-										css.rel = "stylesheet";
-										css.href =
-											"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
-										document.head.appendChild(css);
-										const script =
-											document.createElement("script");
-										script.src =
-											"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
-										script.setAttribute(
-											"kr-public-key",
-											publicKey
-										);
-										script.setAttribute(
-											"kr-post-url-success",
-											"/api/izipay-success"
-										);
-										script.setAttribute(
-											"kr-get-url-refused",
-											"/?payment=refused"
-										);
-										script.setAttribute(
-											"kr-language",
-											"es-ES"
-										);
-										script.onload = () => {
-											setStatus("");
-										};
-										script.onerror = () => {
-											setStatus(
-												"No se pudo cargar la pasarela de Izipay"
-											);
-										};
-										document.head.appendChild(script);
-										setStatus(
-											"Cargando pasarela de Izipay..."
-										);
+									setStatus("");
+									const emailVal = String(email || "").trim();
+									if (
+										!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+											emailVal
+										)
+									) {
+										setStatus("Ingresa un correo válido");
+										return;
 									}
-								} catch {
-									setStatus(
-										"Error interpretando respuesta del pago"
+									const res = await fetch(
+										"/api/izipay-create-payment",
+										{
+											method: "POST",
+											headers: {
+												"Content-Type":
+													"application/json",
+											},
+											body: JSON.stringify({
+												planId: selected.id,
+												email: emailVal,
+											}),
+										}
 									);
-								}
-							}}
-						>
-							Pagar ahora (Yape/Plin con Izipay)
-						</button>
+									try {
+										const data = await res.json();
+										if (!res.ok) {
+											const base =
+												data?.error ||
+												"No se pudo iniciar el pago con Izipay";
+											const more = data?.detail?.message
+												? `: ${data.detail.message}`
+												: "";
+											setStatus(base + more);
+											return;
+										}
+										const formToken = data?.formToken;
+										const publicKey = data?.publicKey;
+										if (!formToken || !publicKey) {
+											setStatus(
+												"Respuesta inválida del servidor de pagos"
+											);
+											return;
+										}
+										if (izipayContainerRef.current) {
+											izipayContainerRef.current.innerHTML =
+												"";
+											const embedded =
+												document.createElement("div");
+											embedded.className = "kr-embedded";
+											embedded.setAttribute(
+												"kr-form-token",
+												formToken
+											);
+											const pan =
+												document.createElement("div");
+											pan.className = "kr-pan";
+											const expiry =
+												document.createElement("div");
+											expiry.className = "kr-expiry";
+											const cvv =
+												document.createElement("div");
+											cvv.className = "kr-security-code";
+											const btn =
+												document.createElement(
+													"button"
+												);
+											btn.className = "kr-payment-button";
+											const err =
+												document.createElement("div");
+											err.className = "kr-form-error";
+											embedded.appendChild(pan);
+											embedded.appendChild(expiry);
+											embedded.appendChild(cvv);
+											embedded.appendChild(btn);
+											embedded.appendChild(err);
+											izipayContainerRef.current.appendChild(
+												embedded
+											);
+											const css =
+												document.createElement("link");
+											css.rel = "stylesheet";
+											css.href =
+												"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
+											document.head.appendChild(css);
+											const script =
+												document.createElement(
+													"script"
+												);
+											script.src =
+												"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
+											script.setAttribute(
+												"kr-public-key",
+												publicKey
+											);
+											script.setAttribute(
+												"kr-post-url-success",
+												"/api/izipay-success"
+											);
+											script.setAttribute(
+												"kr-get-url-refused",
+												"/?payment=refused"
+											);
+											script.setAttribute(
+												"kr-language",
+												"es-ES"
+											);
+											script.onload = () => {
+												setStatus("");
+											};
+											script.onerror = () => {
+												setStatus(
+													"No se pudo cargar la pasarela de Izipay"
+												);
+											};
+											document.head.appendChild(script);
+											setStatus(
+												"Cargando pasarela de Izipay..."
+											);
+										}
+									} catch {
+										setStatus(
+											"Error interpretando respuesta del pago"
+										);
+									}
+								}}
+							>
+								Pagar ahora (Yape/Plin con Izipay)
+							</button>
+						</div>
+						<div className="hidden"></div>
 					</div>
-					<div className="hidden"></div>
-				</div>
+				) : (
+					<div className="mt-10 grid md:grid-cols-2 gap-6">
+						<div className="rounded-2xl border bg-white p-6 shadow-sm">
+							<div className="text-lg font-semibold">
+								Suscríbete en nuestras redes
+							</div>
+							<div className="mt-1 text-sm text-slate-600">
+								Plan Mensual disponible vía redes sociales
+							</div>
+							<div className="mt-4 grid gap-3">
+								<a
+									href="https://www.youtube.com"
+									target="_blank"
+									rel="noopener"
+									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+								>
+									YouTube
+								</a>
+								<a
+									href="https://www.facebook.com"
+									target="_blank"
+									rel="noopener"
+									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+								>
+									Facebook
+								</a>
+								<a
+									href="https://www.tiktok.com"
+									target="_blank"
+									rel="noopener"
+									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+								>
+									TikTok
+								</a>
+							</div>
+						</div>
+						<div className="rounded-2xl border bg-white p-6 shadow-sm">
+							<div className="text-lg font-semibold">
+								Información
+							</div>
+							<div className="mt-1 text-sm text-slate-600">
+								Selecciona Plan Único para pagar con PayPal o
+								Izipay
+							</div>
+						</div>
+					</div>
+				)}
 
 				{status && (
 					<div className="mt-6 rounded-lg border bg-white p-4 text-sm">
