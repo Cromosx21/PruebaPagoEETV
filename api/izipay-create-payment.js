@@ -3,25 +3,13 @@ export default async function handler(req, res) {
 		res.status(405).json({ error: "Method not allowed" });
 		return;
 	}
-	const base = process.env.IZIPAY_CHECKOUT_BASE_URL;
-	const path = process.env.IZIPAY_CHECKOUT_PATH || "";
-	const merchant = process.env.IZIPAY_MERCHANT_ID;
-	if (!base || !merchant) {
+	const apiBase = process.env.IZIPAY_API_BASE || "https://api.micuentaweb.pe";
+	const user = process.env.IZIPAY_REST_USER;
+	const pass = process.env.IZIPAY_REST_PASSWORD;
+	const publicKey = process.env.VITE_IZIPAY_PUBLIC_KEY;
+	if (!user || !pass || !publicKey) {
 		res.status(500).json({
-			error: "Izipay not configured: missing base or merchant",
-		});
-		return;
-	}
-	if (!/^https?:\/\//i.test(base)) {
-		res.status(500).json({ error: "Invalid Izipay base url" });
-		return;
-	}
-	let urlObj;
-	try {
-		urlObj = new URL(path || "", base);
-	} catch {
-		res.status(500).json({
-			error: "Failed to construct Izipay checkout url",
+			error: "Izipay REST not configured: missing user/password/publicKey",
 		});
 		return;
 	}
@@ -30,23 +18,50 @@ export default async function handler(req, res) {
 			? JSON.parse(req.body || "{}")
 			: req.body || {};
 	const planId = body.planId;
+	const email = body.email || "cliente@example.com";
 	const plans = {
 		mensual: { name: "Plan Mensual", amount: 9.99, currency: "PEN" },
 		unico: { name: "Plan Único", amount: 49.0, currency: "PEN" },
 	};
 	const plan = plans[planId] || plans.mensual;
-	const host = process.env.VERCEL_URL
-		? `https://${process.env.VERCEL_URL}`
-		: "http://localhost:5173";
-	const params = new URLSearchParams({
-		amount: String(plan.amount),
+	const amountCents = Math.round(parseFloat(plan.amount) * 100);
+	const orderId = `EETV-${Date.now()}`;
+	const payload = {
+		amount: amountCents,
 		currency: plan.currency,
-		description: plan.name,
-		merchant_id: merchant,
-		methods: "yape,plin",
-		success_url: `${host}/?payment=success`,
-		cancel_url: `${host}/?payment=cancel`,
-	});
-	urlObj.search = params.toString();
-	res.status(200).json({ url: urlObj.toString() });
+		orderId,
+		customer: { email },
+	};
+	const auth = Buffer.from(`${user}:${pass}`).toString("base64");
+	try {
+		const resp = await fetch(
+			`${apiBase}/api-payment/V4/Charge/CreatePayment`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Basic ${auth}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(payload),
+			}
+		);
+		const data = await resp.json().catch(() => null);
+		if (!resp.ok || !data || data.status !== "SUCCESS") {
+			res.status(500).json({
+				error: "Failed to create formToken",
+				detail: data,
+			});
+			return;
+		}
+		const formToken = data.answer?.formToken;
+		if (!formToken) {
+			res.status(500).json({
+				error: "Missing formToken in Izipay response",
+			});
+			return;
+		}
+		res.status(200).json({ formToken, publicKey });
+	} catch {
+		res.status(500).json({ error: "Izipay REST error" });
+	}
 }

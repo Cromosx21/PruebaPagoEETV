@@ -26,6 +26,7 @@ export default function Subscribe() {
 	const [status, setStatus] = useState("");
 	const paypalContainerRef = useRef(null);
 	const cardContainerRef = useRef(null);
+	const izipayContainerRef = useRef(null);
 	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
 
 	useEffect(() => {
@@ -185,6 +186,7 @@ export default function Subscribe() {
 							Pagos procesados en PEN
 						</div>
 						<div className="mt-4" ref={cardContainerRef} />
+						<div className="mt-4" ref={izipayContainerRef} />
 						<button
 							className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
 							onClick={async () => {
@@ -210,13 +212,86 @@ export default function Subscribe() {
 										);
 										return;
 									}
-									if (!data?.url) {
+									const formToken = data?.formToken;
+									const publicKey = data?.publicKey;
+									if (!formToken || !publicKey) {
 										setStatus(
 											"Respuesta inválida del servidor de pagos"
 										);
 										return;
 									}
-									window.location.href = data.url;
+									if (izipayContainerRef.current) {
+										izipayContainerRef.current.innerHTML =
+											"";
+										const embedded =
+											document.createElement("div");
+										embedded.className = "kr-embedded";
+										embedded.setAttribute(
+											"kr-form-token",
+											formToken
+										);
+										const pan =
+											document.createElement("div");
+										pan.className = "kr-pan";
+										const expiry =
+											document.createElement("div");
+										expiry.className = "kr-expiry";
+										const cvv =
+											document.createElement("div");
+										cvv.className = "kr-security-code";
+										const btn =
+											document.createElement("button");
+										btn.className = "kr-payment-button";
+										const err =
+											document.createElement("div");
+										err.className = "kr-form-error";
+										embedded.appendChild(pan);
+										embedded.appendChild(expiry);
+										embedded.appendChild(cvv);
+										embedded.appendChild(btn);
+										embedded.appendChild(err);
+										izipayContainerRef.current.appendChild(
+											embedded
+										);
+										const css =
+											document.createElement("link");
+										css.rel = "stylesheet";
+										css.href =
+											"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
+										document.head.appendChild(css);
+										const script =
+											document.createElement("script");
+										script.src =
+											"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
+										script.setAttribute(
+											"kr-public-key",
+											publicKey
+										);
+										script.setAttribute(
+											"kr-post-url-success",
+											"/?payment=success"
+										);
+										script.setAttribute(
+											"kr-post-url-refused",
+											"/?payment=refused"
+										);
+										script.setAttribute(
+											"kr-language",
+											"es-ES"
+										);
+										script.onload = () => {
+											setStatus("");
+										};
+										script.onerror = () => {
+											setStatus(
+												"No se pudo cargar la pasarela de Izipay"
+											);
+										};
+										document.head.appendChild(script);
+										setStatus(
+											"Cargando pasarela de Izipay..."
+										);
+									}
 								} catch {
 									setStatus(
 										"Error interpretando respuesta del pago"
