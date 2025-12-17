@@ -82,19 +82,21 @@ export default async function handler(req, res) {
 			answer.redirectionUrl ||
 			answer.paymentPageUrl ||
 			null;
-		const formToken = answer.formToken || null;
-		const paymentPageUrl =
-			answer.paymentPageUrl || answer.redirectionUrl || null;
-		res.status(200).json({
-			status: data.status,
-			orderId,
-			qrBase64,
-			qrUrl,
-			formToken,
-			publicKey,
-			paymentPageUrl,
-			raw: data,
-		});
+		if (!qrBase64 && !qrUrl) {
+			res.status(422).json({
+				error: "QR no disponible para esta transacción",
+				detail: {
+					status: data.status,
+					message:
+						data?.answer?.errorMessage ||
+						data?.message ||
+						"El contrato de Izipay puede requerir habilitar QR directo (Yape/Plin)",
+				},
+				raw: data,
+			});
+			return;
+		}
+		res.status(200).json({ status: data.status, orderId, qrBase64, qrUrl });
 	} catch {
 		res.status(500).json({ error: "Izipay REST error" });
 	}
