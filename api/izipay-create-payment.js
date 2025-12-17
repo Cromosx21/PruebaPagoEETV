@@ -31,6 +31,7 @@ export default async function handler(req, res) {
 		currency: plan.currency,
 		orderId,
 		customer: { email },
+		paymentMethodType: "CARD",
 		transactionOptions: {
 			cardOptions: {
 				captureDelay: 0,
@@ -55,7 +56,15 @@ export default async function handler(req, res) {
 		if (!resp.ok || !data || data.status !== "SUCCESS") {
 			res.status(500).json({
 				error: "Failed to create formToken",
-				detail: data,
+				detail: {
+					httpStatus: resp.status,
+					status: data?.status,
+					errorCode: data?.errorCode,
+					message:
+						data?.answer?.errorMessage ||
+						data?.message ||
+						"Unknown error",
+				},
 			});
 			return;
 		}

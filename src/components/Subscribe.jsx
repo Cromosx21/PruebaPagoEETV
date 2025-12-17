@@ -206,10 +206,13 @@ export default function Subscribe() {
 								try {
 									const data = await res.json();
 									if (!res.ok) {
-										setStatus(
+										const base =
 											data?.error ||
-												"No se pudo iniciar el pago con Izipay"
-										);
+											"No se pudo iniciar el pago con Izipay";
+										const more = data?.detail?.message
+											? `: ${data.detail.message}`
+											: "";
+										setStatus(base + more);
 										return;
 									}
 									const formToken = data?.formToken;
