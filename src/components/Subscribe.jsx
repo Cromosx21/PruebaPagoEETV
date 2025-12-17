@@ -201,14 +201,27 @@ export default function Subscribe() {
 										}),
 									}
 								);
-								if (!res.ok) {
+								try {
+									const data = await res.json();
+									if (!res.ok) {
+										setStatus(
+											data?.error ||
+												"No se pudo iniciar el pago con Izipay"
+										);
+										return;
+									}
+									if (!data?.url) {
+										setStatus(
+											"Respuesta inválida del servidor de pagos"
+										);
+										return;
+									}
+									window.location.href = data.url;
+								} catch {
 									setStatus(
-										"No se pudo iniciar el pago con Izipay"
+										"Error interpretando respuesta del pago"
 									);
-									return;
 								}
-								const data = await res.json();
-								window.location.href = data.url;
 							}}
 						>
 							Pagar ahora (Yape/Plin con Izipay)
