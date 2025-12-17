@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 		transactionOptions: {
 			cardOptions: {
 				captureDelay: 0,
-				manualValidation: false,
+				manualValidation: "NO",
 			},
 		},
 	};
