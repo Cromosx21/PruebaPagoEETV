@@ -6,7 +6,7 @@ export default async function handler(req, res) {
 	const apiBase = process.env.IZIPAY_API_BASE || "https://api.micuentaweb.pe";
 	const user = process.env.IZIPAY_REST_USER;
 	const pass = process.env.IZIPAY_REST_PASSWORD;
-	const publicKey = process.env.VITE_IZIPAY_PUBLIC_KEY;
+	const publicKey = process.env.IZIPAY_PUBLIC_KEY;
 	if (!user || !pass || !publicKey) {
 		res.status(500).json({
 			error: "Izipay REST not configured: missing user/password/publicKey",
