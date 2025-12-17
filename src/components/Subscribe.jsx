@@ -24,6 +24,7 @@ const PLANS = [
 export default function Subscribe() {
 	const [selected, setSelected] = useState(PLANS[0]);
 	const [status, setStatus] = useState("");
+	const [email, setEmail] = useState("");
 	const paypalContainerRef = useRef(null);
 	const cardContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
@@ -187,10 +188,24 @@ export default function Subscribe() {
 						</div>
 						<div className="mt-4" ref={cardContainerRef} />
 						<div className="mt-4" ref={izipayContainerRef} />
+						<input
+							type="email"
+							value={email}
+							onChange={(e) => setEmail(e.target.value)}
+							placeholder="Tu correo electrónico"
+							className="mt-4 w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+						/>
 						<button
 							className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
 							onClick={async () => {
 								setStatus("");
+								const emailVal = String(email || "").trim();
+								if (
+									!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)
+								) {
+									setStatus("Ingresa un correo válido");
+									return;
+								}
 								const res = await fetch(
 									"/api/izipay-create-payment",
 									{
@@ -200,6 +215,7 @@ export default function Subscribe() {
 										},
 										body: JSON.stringify({
 											planId: selected.id,
+											email: emailVal,
 										}),
 									}
 								);
