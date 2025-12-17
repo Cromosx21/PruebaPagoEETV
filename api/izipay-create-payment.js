@@ -31,6 +31,12 @@ export default async function handler(req, res) {
 		currency: plan.currency,
 		orderId,
 		customer: { email },
+		transactionOptions: {
+			cardOptions: {
+				captureDelay: 0,
+				manualValidation: false,
+			},
+		},
 	};
 	const auth = Buffer.from(`${user}:${pass}`).toString("base64");
 	try {
