@@ -179,9 +179,40 @@ export default function Subscribe() {
 					</div>
 					<div className="rounded-2xl border bg-white p-6 shadow-sm">
 						<div className="text-lg font-semibold">
-							Pagar con Tarjeta Débito
+							Pagar con Yape y Plin (Izipay)
+						</div>
+						<div className="mt-1 text-sm text-slate-600">
+							Pagos procesados en PEN
 						</div>
 						<div className="mt-4" ref={cardContainerRef} />
+						<button
+							className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+							onClick={async () => {
+								setStatus("");
+								const res = await fetch(
+									"/api/izipay-create-payment",
+									{
+										method: "POST",
+										headers: {
+											"Content-Type": "application/json",
+										},
+										body: JSON.stringify({
+											planId: selected.id,
+										}),
+									}
+								);
+								if (!res.ok) {
+									setStatus(
+										"No se pudo iniciar el pago con Izipay"
+									);
+									return;
+								}
+								const data = await res.json();
+								window.location.href = data.url;
+							}}
+						>
+							Pagar ahora (Yape/Plin con Izipay)
+						</button>
 					</div>
 					<div className="hidden"></div>
 				</div>
