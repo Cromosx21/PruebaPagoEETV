@@ -268,8 +268,8 @@ export default function Subscribe() {
 											publicKey
 										);
 										script.setAttribute(
-											"kr-get-url-success",
-											"/?payment=success"
+											"kr-post-url-success",
+											"/api/izipay-success"
 										);
 										script.setAttribute(
 											"kr-get-url-refused",
