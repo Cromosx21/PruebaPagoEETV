@@ -15,9 +15,9 @@ function App() {
         <Hero />
         <Stats />
         <Schedule />
+        <Steps />
         <Plans />
         <Subscribe />
-        <Steps />
       </main>
       <Footer />
     </div>

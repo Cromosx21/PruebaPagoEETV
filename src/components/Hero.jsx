@@ -38,15 +38,8 @@ export default function Hero() {
 						</div>
 					</div>
 					<div className="relative">
-						<div className="rounded-2xl bg-white shadow-xl p-6">
-							<div className="grid grid-cols-3 gap-4">
-								<div className="aspect-square rounded-lg bg-primary/20"></div>
-								<div className="aspect-square rounded-lg bg-secondary/20"></div>
-								<div className="aspect-square rounded-lg bg-accent/20"></div>
-								<div className="aspect-square rounded-lg bg-secondary/20"></div>
-								<div className="aspect-square rounded-lg bg-accent/20"></div>
-								<div className="aspect-square rounded-lg bg-primary/20"></div>
-							</div>
+						<div className="border-b-8 border-primary ">
+							<img src="/Hero-jessica.png" alt="" />
 						</div>
 					</div>
 				</div>

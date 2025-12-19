@@ -25,13 +25,12 @@ export default function Schedule() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-10 items-center">
           <div className="order-2 lg:order-1">
-            <div className="relative h-[380px] rounded-2xl overflow-hidden">
+            <div className="relative h-[380px] rounded-2xl overflow-hidden -rotate-1 shadow-xl shadow-neutral-400">
               <img
-                src="https://images.unsplash.com/photo-1520975922284-5f62a75beedd?q=80&w=1600&auto=format&fit=crop"
+                src="./ClassZoom.jpg"
                 alt="Personas de distintos países felices por aprender inglés"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover "
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-dark/40 to-transparent"></div>
             </div>
           </div>
           <div className="order-1 lg:order-2">

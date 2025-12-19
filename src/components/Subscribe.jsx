@@ -4,21 +4,31 @@ const PLANS = [
 	{
 		id: "mensual",
 		name: "Plan Mensual",
-		amount: "9.99",
-		currency: "USD",
+		amount: "16.90",
+		currency: "PEN",
+		paypalAmount: "5.90",
 		color: "primary",
 	},
 	{
 		id: "unico",
 		name: "Plan Único",
-		amount: "50.00",
-		currency: "USD",
+		amount: "185.00",
+		currency: "PEN",
+		paypalAmount: "50.00",
 		color: "secondary",
+	},
+	{
+		id: "vip",
+		name: "Plan VIP",
+		amount: "250.00",
+		currency: "PEN",
+		paypalAmount: "68.00",
+		color: "accent",
 	},
 ];
 
 export default function Subscribe() {
-	const [selected, setSelected] = useState(PLANS[0]);
+	const [selected, setSelected] = useState(PLANS[1]); // Default to Unico (Popular)
 	const [status, setStatus] = useState("");
 	const [method, setMethod] = useState("paypal");
 	const [izipayData, setIzipayData] = useState({
@@ -30,8 +40,12 @@ export default function Subscribe() {
 	const izipayContainerRef = useRef(null);
 	const krScriptRef = useRef(null);
 	const krLoadedRef = useRef(false);
-	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
-	const isUnico = selected.id === "unico";
+	const colorClasses = {
+		primary: "bg-primary",
+		secondary: "bg-secondary",
+		accent: "bg-accent",
+	};
+	const isDirectPayment = selected.id !== "mensual";
 	const yapeNumber =
 		(import.meta.env.VITE_YAPE_NUMBER || "").toString().trim() ||
 		"969673200";
@@ -96,11 +110,11 @@ export default function Subscribe() {
 
 		const renderButtons = async () => {
 			try {
-				if (!isUnico) {
+				if (!isDirectPayment) {
 					setStatus("");
 					if (paypalContainerRef.current) {
 						paypalContainerRef.current.innerHTML =
-							'<div class="text-sm text-slate-600">Disponible solo para Plan Único</div>';
+							'<div class="text-sm text-slate-600">Disponible solo para Planes de Pago Directo</div>';
 					}
 					return;
 				}
@@ -127,7 +141,7 @@ export default function Subscribe() {
 							purchase_units: [
 								{
 									amount: {
-										value: selected.amount,
+										value: selected.paypalAmount,
 										currency_code: "USD",
 									},
 									description: selected.name,
@@ -230,7 +244,7 @@ export default function Subscribe() {
 	// Efecto para inicializar Izipay cuando se selecciona el método
 	useEffect(() => {
 		let timer;
-		if (method === "izipay" && isUnico) {
+		if (method === "izipay" && isDirectPayment) {
 			// Pequeño delay para asegurar que el DOM está listo y evitar condiciones de carrera
 			timer = setTimeout(() => {
 				initializeIzipay();
@@ -294,7 +308,7 @@ export default function Subscribe() {
 
 				<div
 					className={`mt-10 gap-6 ${
-						isUnico ? "grid md:grid-cols-4" : "hidden"
+						isDirectPayment ? "grid md:grid-cols-4" : "hidden"
 					}`}
 				>
 					<div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -345,7 +359,15 @@ export default function Subscribe() {
 									Pagar con PayPal
 								</div>
 								<div className="mt-1 text-sm text-slate-600">
-									Pagos procesados en USD
+									Monto a pagar: {selected.currency}{" "}
+									{selected.amount}
+									{selected.currency !== "USD" && (
+										<span className="block text-xs text-slate-500 mt-1">
+											(Equivalente aprox. a $
+											{selected.paypalAmount} USD para
+											procesamiento)
+										</span>
+									)}
 								</div>
 								<div
 									className="mt-4"
@@ -495,7 +517,7 @@ export default function Subscribe() {
 
 				<div
 					className={`mt-10 gap-6 ${
-						!isUnico ? "grid md:grid-cols-2" : "hidden"
+						!isDirectPayment ? "grid md:grid-cols-2" : "hidden"
 					}`}
 				>
 					<div className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -507,7 +529,7 @@ export default function Subscribe() {
 						</div>
 						<div className="mt-4 grid gap-3">
 							<a
-								href="https://www.youtube.com"
+								href="https://www.youtube.com/channel/UCzxP2uldBPoaOdS-vhuGYzg/join"
 								target="_blank"
 								rel="noopener"
 								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
@@ -515,7 +537,7 @@ export default function Subscribe() {
 								YouTube
 							</a>
 							<a
-								href="https://www.facebook.com"
+								href="https://www.facebook.com/EasyEnglishTv.1"
 								target="_blank"
 								rel="noopener"
 								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
@@ -523,7 +545,7 @@ export default function Subscribe() {
 								Facebook
 							</a>
 							<a
-								href="https://www.tiktok.com"
+								href="https://www.tiktok.com/@easyenglishtvtiktok?is_from_webapp=1&sender_device=pc"
 								target="_blank"
 								rel="noopener"
 								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
@@ -535,7 +557,8 @@ export default function Subscribe() {
 					<div className="rounded-2xl border bg-white p-6 shadow-sm">
 						<div className="text-lg font-semibold">Información</div>
 						<div className="mt-1 text-sm text-slate-600">
-							Selecciona Plan Único para pagar con PayPal o Izipay
+							Selecciona Plan Único o VIP para pagar con PayPal o
+							Izipay
 						</div>
 					</div>
 				</div>

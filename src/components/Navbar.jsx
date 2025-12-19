@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LogoEETV from "../../public/LogoEETV.svg";
 
 export default function Navbar() {
 	const [open, setOpen] = useState(false);
@@ -7,8 +8,7 @@ export default function Navbar() {
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-16">
 					<a href="#" className="flex items-center gap-2">
-						<span className="inline-block h-8 w-8 rounded bg-primary"></span>
-						<span className="text-lg font-bold">EasyEnglishTV</span>
+						<img src={LogoEETV} alt="Logo EasyEnglishTV" className="h-12" />
 					</a>
 					<nav className="hidden md:flex items-center gap-6">
 						<a

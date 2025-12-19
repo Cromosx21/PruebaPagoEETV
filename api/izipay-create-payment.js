@@ -20,6 +20,7 @@ export default async function handler(req, res) {
 	const plans = {
 		mensual: { name: "Plan Mensual", amount: 9.99, currency: "PEN" },
 		unico: { name: "Plan Único", amount: 185.0, currency: "PEN" },
+		vip: { name: "Plan VIP", amount: 250.0, currency: "PEN" },
 	};
 
 	const { planId, firstName, lastName } = body;
