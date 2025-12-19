@@ -1,7 +1,3 @@
-// Sección de suscripción: integra PayPal (wallet y tarjeta) y Stripe Checkout para pagos con tarjeta
-// - Moneda configurada para Perú (PEN)
-// - Selección de planes con distintos montos
-// - Carga dinámica del SDK de PayPal usando client id por entorno
 import { useEffect, useRef, useState } from "react";
 
 const PLANS = [
@@ -24,13 +20,26 @@ const PLANS = [
 export default function Subscribe() {
 	const [selected, setSelected] = useState(PLANS[0]);
 	const [status, setStatus] = useState("");
-	const [email, setEmail] = useState("");
+	const [method, setMethod] = useState("paypal");
 	const paypalContainerRef = useRef(null);
-	const cardContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
-	const [brand, setBrand] = useState("visa");
 	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
 	const isUnico = selected.id === "unico";
+	const yapeNumber =
+		(import.meta.env.VITE_YAPE_NUMBER || "").toString().trim() ||
+		"969673200";
+	const plinNumber =
+		(import.meta.env.VITE_PLIN_NUMBER || "").toString().trim() ||
+		"969673200";
+	const whatsappNumber =
+		(import.meta.env.VITE_WHATSAPP_NUMBER || "").toString().trim() ||
+		"+51969673200";
+	const yapeQr =
+		(import.meta.env.VITE_YAPE_QR_URL || "").toString().trim() ||
+		"/yape.avif";
+	const plinQr =
+		(import.meta.env.VITE_PLIN_QR_URL || "").toString().trim() ||
+		"/plin-qr.svg";
 
 	useEffect(() => {
 		const rawId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
@@ -38,7 +47,7 @@ export default function Subscribe() {
 			String(rawId)
 				.replace(/^"+|"+$/g, "")
 				.trim() || "sb";
-		const url = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons&enable-funding=card`;
+		const url = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons`;
 		const ensureSdk = () =>
 			new Promise((resolve, reject) => {
 				if (window.paypal) return resolve();
@@ -53,15 +62,17 @@ export default function Subscribe() {
 
 		const renderButtons = async () => {
 			try {
-				if (selected.id !== "unico") {
+				if (!isUnico) {
 					setStatus("");
 					if (paypalContainerRef.current) {
 						paypalContainerRef.current.innerHTML =
 							'<div class="text-sm text-slate-600">Disponible solo para Plan Único</div>';
 					}
-					if (cardContainerRef.current) {
-						cardContainerRef.current.innerHTML =
-							'<div class="text-sm text-slate-600">Disponible solo para Plan Único</div>';
+					return;
+				}
+				if (method !== "paypal") {
+					if (paypalContainerRef.current) {
+						paypalContainerRef.current.innerHTML = "";
 					}
 					return;
 				}
@@ -69,9 +80,6 @@ export default function Subscribe() {
 				setStatus("");
 				if (paypalContainerRef.current) {
 					paypalContainerRef.current.innerHTML = "";
-				}
-				if (cardContainerRef.current) {
-					cardContainerRef.current.innerHTML = "";
 				}
 				// Botón estándar de PayPal (wallet)
 				const paypalButtons = window.paypal.Buttons({
@@ -99,41 +107,6 @@ export default function Subscribe() {
 					onError: () => setStatus("Error procesando el pago"),
 				});
 				paypalButtons.render(paypalContainerRef.current);
-
-				// Botón de tarjeta vía PayPal (si es elegible en la región)
-				const cardButtons = window.paypal.Buttons({
-					fundingSource: window.paypal.FUNDING.CARD,
-					style: {
-						layout: "horizontal",
-						shape: "pill",
-						color: "silver",
-					},
-					createOrder: (_, actions) =>
-						actions.order.create({
-							purchase_units: [
-								{
-									amount: {
-										value: selected.amount,
-										currency_code: "USD",
-									},
-									description: `${selected.name} (Tarjeta)`,
-								},
-							],
-						}),
-					onApprove: async (_, actions) => {
-						const details = await actions.order.capture();
-						setStatus(`Pago con tarjeta aprobado: ${details.id}`);
-					},
-					onError: () => setStatus("Error procesando la tarjeta"),
-				});
-				if (cardButtons.isEligible()) {
-					cardButtons.render(cardContainerRef.current);
-				} else {
-					if (cardContainerRef.current) {
-						cardContainerRef.current.innerHTML =
-							'<div class="text-sm text-slate-600">Pago con tarjeta no disponible en tu región</div>';
-					}
-				}
 			} catch {
 				setStatus("No se pudo inicializar el pago");
 			}
@@ -141,7 +114,107 @@ export default function Subscribe() {
 		renderButtons();
 		// Re-render cuando cambia el plan
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selected.id]);
+	}, [selected.id, method]);
+
+	useEffect(() => {
+		const initIzipay = async () => {
+			try {
+				if (!isUnico || method !== "izipay") {
+					if (izipayContainerRef.current) {
+						izipayContainerRef.current.innerHTML = "";
+					}
+					return;
+				}
+				setStatus("");
+				const res = await fetch("/api/izipay-create-payment", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						planId: selected.id,
+					}),
+				});
+				const data = await res.json().catch(() => ({}));
+				if (!res.ok) {
+					const base =
+						data?.error || "No se pudo iniciar el pago con Izipay";
+					const more = data?.detail?.message
+						? `: ${data.detail.message}`
+						: "";
+					setStatus(base + more);
+					return;
+				}
+				const formToken = data?.formToken;
+				const publicKey = data?.publicKey;
+				if (!formToken || !publicKey) {
+					setStatus("Respuesta inválida del servidor de pagos");
+					return;
+				}
+				if (izipayContainerRef.current) {
+					izipayContainerRef.current.innerHTML = "";
+					const embedded = document.createElement("div");
+					embedded.className = "kr-embedded";
+					embedded.setAttribute("kr-form-token", formToken);
+					const pan = document.createElement("div");
+					pan.className = "kr-pan";
+					const expiry = document.createElement("div");
+					expiry.className = "kr-expiry";
+					const cvv = document.createElement("div");
+					cvv.className = "kr-security-code";
+					const btn = document.createElement("button");
+					btn.className = "kr-payment-button";
+					const err = document.createElement("div");
+					err.className = "kr-form-error";
+					embedded.appendChild(pan);
+					embedded.appendChild(expiry);
+					embedded.appendChild(cvv);
+					embedded.appendChild(btn);
+					embedded.appendChild(err);
+					izipayContainerRef.current.appendChild(embedded);
+					const existingCss = document.querySelector(
+						'link[href="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css"]'
+					);
+					if (!existingCss) {
+						const css = document.createElement("link");
+						css.rel = "stylesheet";
+						css.href =
+							"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
+						document.head.appendChild(css);
+					}
+					const existingScript = document.querySelector(
+						'script[src="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"]'
+					);
+					if (existingScript) {
+						existingScript.remove();
+					}
+					const script = document.createElement("script");
+					script.src =
+						"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
+					script.setAttribute("kr-public-key", publicKey);
+					script.setAttribute(
+						"kr-post-url-success",
+						"/api/izipay-success"
+					);
+					script.setAttribute(
+						"kr-get-url-refused",
+						"/?payment=refused"
+					);
+					script.setAttribute("kr-language", "es-ES");
+					script.onload = () => {
+						setStatus("");
+					};
+					script.onerror = () => {
+						setStatus("No se pudo cargar la pasarela de Izipay");
+					};
+					document.head.appendChild(script);
+					setStatus("Cargando pasarela de Izipay...");
+				}
+			} catch {
+				setStatus("Error interpretando respuesta del pago");
+			}
+		};
+		initIzipay();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selected.id, method]);
 
 	return (
 		<section id="suscribete" className="py-16 bg-slate-50">
@@ -149,7 +222,7 @@ export default function Subscribe() {
 				<div className="text-center">
 					<h2 className="text-3xl font-bold">Suscríbete</h2>
 					<p className="mt-2 text-slate-600">
-						Elige tu plan y paga con PayPal o tarjeta débito
+						Elige tu plan y paga con PayPal, Izipay o QR (Yape/Plin)
 					</p>
 				</div>
 
@@ -184,218 +257,145 @@ export default function Subscribe() {
 				</div>
 
 				{isUnico ? (
-					<div className="mt-10 grid md:grid-cols-3 gap-6">
+					<div className="mt-10 grid md:grid-cols-4 gap-6">
 						<div className="rounded-2xl border bg-white p-6 shadow-sm">
 							<div className="text-lg font-semibold">
-								Pagar con PayPal
-							</div>
-							<div className="mt-1 text-sm text-slate-600">
-								Pagos procesados en USD
-							</div>
-							<div className="mt-4" ref={paypalContainerRef} />
-						</div>
-						<div className="rounded-2xl border bg-white p-6 shadow-sm">
-							<div className="text-lg font-semibold">
-								Pagar con Tarjeta (Izipay)
-							</div>
-							<div className="mt-1 text-sm text-slate-600">
-								Pagos procesados en PEN
+								Método de pago
 							</div>
 							<div className="mt-4 flex flex-wrap gap-2">
 								<button
 									type="button"
-									onClick={() => setBrand("visa")}
+									onClick={() => setMethod("paypal")}
 									className={`px-3 py-2 rounded-lg border ${
-										brand === "visa"
+										method === "paypal"
 											? "bg-primary text-white border-primary"
 											: "bg-white text-slate-700"
 									}`}
 								>
-									Visa
+									PayPal
 								</button>
 								<button
 									type="button"
-									onClick={() => setBrand("mastercard")}
+									onClick={() => setMethod("izipay")}
 									className={`px-3 py-2 rounded-lg border ${
-										brand === "mastercard"
+										method === "izipay"
 											? "bg-primary text-white border-primary"
 											: "bg-white text-slate-700"
 									}`}
 								>
-									Mastercard
+									Izipay (Tarjeta)
 								</button>
 								<button
 									type="button"
-									onClick={() => setBrand("amex")}
+									onClick={() => setMethod("qr")}
 									className={`px-3 py-2 rounded-lg border ${
-										brand === "amex"
+										method === "qr"
 											? "bg-primary text-white border-primary"
 											: "bg-white text-slate-700"
 									}`}
 								>
-									Amex
-								</button>
-								<button
-									type="button"
-									onClick={() => setBrand("diners")}
-									className={`px-3 py-2 rounded-lg border ${
-										brand === "diners"
-											? "bg-primary text-white border-primary"
-											: "bg-white text-slate-700"
-									}`}
-								>
-									Diners
+									QR (Yape/Plin)
 								</button>
 							</div>
-							<div className="mt-4" ref={cardContainerRef} />
-							<div className="mt-4" ref={izipayContainerRef} />
-							{/* QR eliminado: solo flujo con tarjeta */}
-							<input
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="Tu correo electrónico"
-								className="mt-4 w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-							/>
-							<button
-								className="mt-4 rounded-lg bg-dark text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-								disabled={!isUnico}
-								onClick={async () => {
-									if (selected.id !== "unico") {
-										setStatus(
-											"Pago disponible solo para Plan Único"
-										);
-										return;
-									}
-									setStatus("");
-									const emailVal = String(email || "").trim();
-									if (
-										!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-											emailVal
-										)
-									) {
-										setStatus("Ingresa un correo válido");
-										return;
-									}
-									const res = await fetch(
-										"/api/izipay-create-payment",
-										{
-											method: "POST",
-											headers: {
-												"Content-Type":
-													"application/json",
-											},
-											body: JSON.stringify({
-												planId: selected.id,
-												email: emailVal,
-											}),
-										}
-									);
-									try {
-										const data = await res.json();
-										if (!res.ok) {
-											const base =
-												data?.error ||
-												"No se pudo iniciar el pago con Izipay";
-											const more = data?.detail?.message
-												? `: ${data.detail.message}`
-												: "";
-											setStatus(base + more);
-											return;
-										}
-										const formToken = data?.formToken;
-										const publicKey = data?.publicKey;
-										if (!formToken || !publicKey) {
-											setStatus(
-												"Respuesta inválida del servidor de pagos"
+						</div>
+						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2">
+							{method === "paypal" && (
+								<>
+									<div className="text-lg font-semibold">
+										Pagar con PayPal
+									</div>
+									<div className="mt-1 text-sm text-slate-600">
+										Pagos procesados en USD
+									</div>
+									<div
+										className="mt-4"
+										ref={paypalContainerRef}
+									/>
+								</>
+							)}
+							{method === "izipay" && (
+								<>
+									<div className="text-lg font-semibold">
+										Pagar con Tarjeta (Izipay)
+									</div>
+									<div className="mt-1 text-sm text-slate-600">
+										Pagos procesados en PEN
+									</div>
+									<div
+										className="mt-4"
+										ref={izipayContainerRef}
+									/>
+								</>
+							)}
+							{method === "qr" && (
+								<>
+									<div className="text-lg font-semibold">
+										Pagar con QR (Yape/Plin)
+									</div>
+									<div className="mt-4 grid md:grid-cols-2 gap-4">
+										<div className="rounded-lg border p-4">
+											<div className="font-medium">
+												Yape
+											</div>
+											<div className="mt-2">
+												{yapeQr ? (
+													<img
+														src={yapeQr}
+														alt="QR Yape"
+														className="w-full rounded"
+													/>
+												) : (
+													<div className="h-40 flex items-center justify-center text-sm text-slate-500">
+														QR de Yape no
+														configurado
+													</div>
+												)}
+											</div>
+											<div className="mt-2 text-sm text-slate-700">
+												Número: {yapeNumber}
+											</div>
+										</div>
+										<div className="rounded-lg border p-4">
+											<div className="font-medium">
+												Plin
+											</div>
+											<div className="mt-2">
+												{plinQr ? (
+													<img
+														src={plinQr}
+														alt="QR Plin"
+														className="w-full rounded"
+													/>
+												) : (
+													<div className="h-40 flex items-center justify-center text-sm text-slate-500">
+														QR de Plin no
+														configurado
+													</div>
+												)}
+											</div>
+											<div className="mt-2 text-sm text-slate-700">
+												Número: {plinNumber}
+											</div>
+										</div>
+									</div>
+									<button
+										type="button"
+										className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+										onClick={() => {
+											const msg = encodeURIComponent(
+												`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`
 											);
-											return;
-										}
-										if (izipayContainerRef.current) {
-											izipayContainerRef.current.innerHTML =
-												"";
-											const embedded =
-												document.createElement("div");
-											embedded.className = "kr-embedded";
-											embedded.setAttribute(
-												"kr-form-token",
-												formToken
-											);
-											const pan =
-												document.createElement("div");
-											pan.className = "kr-pan";
-											const expiry =
-												document.createElement("div");
-											expiry.className = "kr-expiry";
-											const cvv =
-												document.createElement("div");
-											cvv.className = "kr-security-code";
-											const btn =
-												document.createElement(
-													"button"
-												);
-											btn.className = "kr-payment-button";
-											const err =
-												document.createElement("div");
-											err.className = "kr-form-error";
-											embedded.appendChild(pan);
-											embedded.appendChild(expiry);
-											embedded.appendChild(cvv);
-											embedded.appendChild(btn);
-											embedded.appendChild(err);
-											izipayContainerRef.current.appendChild(
-												embedded
-											);
-											const css =
-												document.createElement("link");
-											css.rel = "stylesheet";
-											css.href =
-												"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
-											document.head.appendChild(css);
-											const script =
-												document.createElement(
-													"script"
-												);
-											script.src =
-												"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
-											script.setAttribute(
-												"kr-public-key",
-												publicKey
-											);
-											script.setAttribute(
-												"kr-post-url-success",
-												"/api/izipay-success"
-											);
-											script.setAttribute(
-												"kr-get-url-refused",
-												"/?payment=refused"
-											);
-											script.setAttribute(
-												"kr-language",
-												"es-ES"
-											);
-											script.onload = () => {
-												setStatus("");
-											};
-											script.onerror = () => {
-												setStatus(
-													"No se pudo cargar la pasarela de Izipay"
-												);
-											};
-											document.head.appendChild(script);
-											setStatus(
-												"Cargando pasarela de Izipay..."
-											);
-										}
-									} catch {
-										setStatus(
-											"Error interpretando respuesta del pago"
-										);
-									}
-								}}
-							>
-								Pagar ahora (Yape/Plin con Izipay)
-							</button>
+											const waUrl = `https://wa.me/${whatsappNumber.replace(
+												/[^+\d]/g,
+												""
+											)}?text=${msg}`;
+											window.open(waUrl, "_blank");
+										}}
+									>
+										Enviar voucher por WhatsApp
+									</button>
+								</>
+							)}
 						</div>
 						<div className="hidden"></div>
 					</div>
