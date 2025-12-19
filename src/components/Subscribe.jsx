@@ -150,13 +150,26 @@ export default function Subscribe() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selected.id, method]);
 
+	const mountedRef = useRef(true);
+
+	useEffect(() => {
+		mountedRef.current = true;
+		return () => {
+			mountedRef.current = false;
+		};
+	}, []);
+
 	// Modificar la función para que no dependa del evento y sea inicialización
 	const initializeIzipay = async () => {
 		try {
+			if (!mountedRef.current) return;
+
 			// Limpiar cualquier estado previo
 			if (window.KR) {
 				await window.KR.removeForms();
 			}
+
+			if (!mountedRef.current) return;
 
 			setStatus("Cargando pasarela de pago...");
 			const res = await fetch("/api/izipay-create-payment", {
@@ -169,6 +182,9 @@ export default function Subscribe() {
 					lastName: izipayData.lastName,
 				}),
 			});
+
+			if (!mountedRef.current) return;
+
 			const data = await res.json().catch(() => ({}));
 			if (!res.ok) {
 				setStatus(
@@ -193,28 +209,46 @@ export default function Subscribe() {
 
 			// Inicializar formulario
 			const result = await window.KR.setFormToken(formToken);
-			if (result.hasError) {
-				setStatus(
-					"Error al inicializar el formulario: " + result.errorMessage
-				);
-			} else {
-				setStatus(""); // Limpiar estado, el formulario se muestra
+			if (mountedRef.current) {
+				if (result.hasError) {
+					setStatus(
+						"Error al inicializar el formulario: " +
+							result.errorMessage
+					);
+				} else {
+					setStatus(""); // Limpiar estado, el formulario se muestra
+				}
 			}
 		} catch (error) {
 			console.error(error);
-			setStatus("Error al procesar el pago con Izipay");
+			if (mountedRef.current) {
+				setStatus("Error al procesar el pago con Izipay");
+			}
 		}
 	};
 
 	// Efecto para inicializar Izipay cuando se selecciona el método
 	useEffect(() => {
+		let timer;
 		if (method === "izipay" && isUnico) {
 			// Pequeño delay para asegurar que el DOM está listo y evitar condiciones de carrera
-			const timer = setTimeout(() => {
+			timer = setTimeout(() => {
 				initializeIzipay();
 			}, 100);
-			return () => clearTimeout(timer);
 		}
+
+		// Cleanup function para limpiar formularios cuando se desmonta o cambia el método
+		return () => {
+			if (timer) clearTimeout(timer);
+			if (window.KR) {
+				// Intentar limpiar formularios de manera segura
+				try {
+					window.KR.removeForms();
+				} catch (e) {
+					console.error("Error cleaning up Izipay forms:", e);
+				}
+			}
+		};
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [method, selected.id]); // Se ejecuta al cambiar método o plan
 
