@@ -49,12 +49,27 @@ export default function Subscribe() {
 		"/plin-qr.svg";
 
 	useEffect(() => {
+		// Cargar estilos de Izipay V4
+		if (!document.querySelector('link[href*="kr-payment-form.neon.css"]')) {
+			const link = document.createElement("link");
+			link.rel = "stylesheet";
+			link.href =
+				"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.neon.css";
+			document.head.appendChild(link);
+		}
+
+		// Cargar script de Izipay V4
 		const scriptUrl =
-			import.meta.env.VITE_IZIPAY_SDK_URL ||
-			"https://sandbox-checkout.izipay.pe/payments/v1/js/index.js";
+			"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
 		if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
 			const script = document.createElement("script");
 			script.src = scriptUrl;
+			script.setAttribute(
+				"kr-public-key",
+				import.meta.env.VITE_IZIPAY_PUBLIC_KEY ||
+					"52755255:testpublickey_ezl002715016335123456789012345678901234567890" // Fallback or empty if not set
+			);
+			script.setAttribute("kr-post-url-success", "paid"); // Opcional, para redirección
 			script.async = true;
 			document.head.appendChild(script);
 		}
@@ -165,69 +180,29 @@ export default function Subscribe() {
 				return;
 			}
 
-			const {
-				formToken,
-				publicKey,
-				merchantCode,
-				orderId,
-				transactionId,
-				dateTimeTransaction,
-				amount,
-				currency,
-			} = data;
+			const { formToken } = data;
 
-			if (!formToken || !publicKey) {
+			if (!formToken) {
 				setStatus("Respuesta inválida del servidor");
 				return;
 			}
 
-			if (typeof window.Izipay !== "function") {
+			if (typeof window.KR === "undefined") {
 				setStatus(
-					"La pasarela de Izipay no está cargada correctamente"
+					"La pasarela de pago no se ha cargado correctamente. Recargue la página."
 				);
 				return;
 			}
 
-			const iziConfig = {
-				transactionId: transactionId,
-				action: "pay",
-				merchantCode: merchantCode,
-				order: {
-					orderNumber: orderId,
-					currency: currency || "PEN",
-					amount: amount,
-					processType: "AT",
-					merchantBuyerId: izipayData.email,
-					dateTimeTransaction: dateTimeTransaction,
-				},
-				billing: {
-					firstName: izipayData.firstName,
-					lastName: izipayData.lastName,
-					email: izipayData.email,
-				},
-				render: {
-					typeForm: "pop-up",
-				},
-			};
-
-			console.log("Initializing Izipay with config:", iziConfig);
-
-			const checkout = new window.Izipay({ config: iziConfig });
-			checkout.LoadForm({
-				authorization: formToken,
-				keyRSA: publicKey,
-				callbackResponse: (response) => {
-					console.log("Izipay response:", response);
-					if (response.code === "00" || response.status === "PAID") {
-						setStatus("Pago realizado con éxito");
-					} else {
-						setStatus(
-							"El pago no se completó o fue rechazado: " +
-								(response.message || "")
-						);
-					}
-				},
-			});
+			// Inicializar formulario
+			const result = await window.KR.setFormToken(formToken);
+			if (result.hasError) {
+				setStatus(
+					"Error al inicializar el formulario: " + result.errorMessage
+				);
+			} else {
+				setStatus(""); // Limpiar estado, el formulario se muestra
+			}
 		} catch (error) {
 			console.error(error);
 			setStatus("Error al procesar el pago con Izipay");
@@ -402,7 +377,7 @@ export default function Subscribe() {
 										</button>
 									</div>
 									<div
-										className="mt-4"
+										className="mt-4 kr-embedded"
 										ref={izipayContainerRef}
 									/>
 								</>
