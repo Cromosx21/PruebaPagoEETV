@@ -3,9 +3,110 @@
 @tailwind utilities;
 
 * {
-  box-sizing: border-box;
+	box-sizing: border-box;
 }
 
-html, body, #root {
-  height: 100%;
+html,
+body,
+#root {
+	height: 100%;
+}
+
+/* =========================================
+   Izipay (Krypton V4) Custom Styles
+   ========================================= */
+
+:root {
+	/* Input Styles */
+	--kr-input-background-color: #ffffff !important;
+	--kr-input-border-color: #e2e8f0 !important; /* slate-200 */
+	--kr-input-border-radius: 8px !important;
+	--kr-input-height: 48px !important;
+	--kr-input-padding: 12px 16px !important; /* Spacious padding */
+	--kr-input-font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+	--kr-input-color: #1e293b !important; /* slate-800 */
+	--kr-input-placeholder-color: #94a3b8 !important; /* slate-400 */
+	--kr-input-border-width: 1px !important;
+
+	/* Focus State */
+	--kr-input-focus-border-color: #0070f3 !important; /* Primary Brand Color */
+	--kr-input-focus-shadow: 0 0 0 4px rgba(0, 112, 243, 0.1) !important; /* Soft ring */
+
+	/* Button Styles */
+	--kr-payment-button-background-color: #0070f3 !important;
+	--kr-payment-button-border-radius: 10px !important;
+	--kr-payment-button-color: #ffffff !important;
+	--kr-payment-button-font-weight: 700 !important;
+	--kr-payment-button-hover-background-color: #0060df !important; /* Slightly darker */
+	--kr-payment-button-height: 52px !important;
+
+	/* Error States */
+	--kr-input-error-border-color: #ef4444 !important;
+	--kr-input-error-color: #ef4444 !important;
+}
+
+/* Container Adjustments */
+.kr-embedded {
+	width: 100% !important;
+	margin-top: 1.5rem; /* Matches mt-6 */
+}
+
+/* Field Layout & Labels */
+.kr-field {
+	margin-bottom: 1rem !important;
+}
+
+/* Hide internal labels as requested */
+.kr-field-label {
+	display: none !important;
+}
+
+/* Input Fields Styling */
+.kr-field-element {
+	background-color: var(--kr-input-background-color) !important;
+	border: 1px solid var(--kr-input-border-color) !important;
+	border-radius: var(--kr-input-border-radius) !important;
+	padding: 0 !important; /* Padding is handled by height and internal spacing usually, or set via var */
+	height: var(--kr-input-height) !important;
+	transition: all 0.2s ease-in-out;
+	box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+}
+
+/* Focus State */
+.kr-field-element.kr-field-focused {
+	border-color: var(--kr-input-focus-border-color) !important;
+	box-shadow: var(--kr-input-focus-shadow) !important;
+	outline: none !important;
+}
+
+/* Payment Button Styling */
+.kr-payment-button {
+	width: 100% !important;
+	background-color: var(--kr-payment-button-background-color) !important;
+	color: var(--kr-payment-button-color) !important;
+	border-radius: var(--kr-payment-button-border-radius) !important;
+	font-weight: var(--kr-payment-button-font-weight) !important;
+	height: var(--kr-payment-button-height) !important;
+	font-family: var(--kr-input-font-family) !important;
+	font-size: 1rem !important;
+	border: none !important;
+	cursor: pointer;
+	transition: background-color 0.2s ease, transform 0.1s ease;
+	margin-top: 1rem !important;
+}
+
+.kr-payment-button:hover {
+	background-color: var(
+		--kr-payment-button-hover-background-color
+	) !important;
+}
+
+.kr-payment-button:active {
+	transform: translateY(1px);
+}
+
+/* Smart Form Specifics (if any) */
+.kr-smart-form {
+	padding: 0 !important;
+	background: transparent !important;
 }
