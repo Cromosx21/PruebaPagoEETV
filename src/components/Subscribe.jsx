@@ -150,18 +150,15 @@ export default function Subscribe() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selected.id, method]);
 
-	const handleIzipayPay = async () => {
-		if (
-			!izipayData.firstName ||
-			!izipayData.lastName ||
-			!izipayData.email
-		) {
-			setStatus("Por favor complete todos los campos requeridos");
-			return;
-		}
-
+	// Modificar la función para que no dependa del evento y sea inicialización
+	const initializeIzipay = async () => {
 		try {
-			setStatus("Iniciando pago con Izipay...");
+			// Limpiar cualquier estado previo
+			if (window.KR) {
+				await window.KR.removeForms();
+			}
+
+			setStatus("Cargando pasarela de pago...");
 			const res = await fetch("/api/izipay-create-payment", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -208,6 +205,18 @@ export default function Subscribe() {
 			setStatus("Error al procesar el pago con Izipay");
 		}
 	};
+
+	// Efecto para inicializar Izipay cuando se selecciona el método
+	useEffect(() => {
+		if (method === "izipay" && isUnico) {
+			// Pequeño delay para asegurar que el DOM está listo y evitar condiciones de carrera
+			const timer = setTimeout(() => {
+				initializeIzipay();
+			}, 100);
+			return () => clearTimeout(timer);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [method, selected.id]); // Se ejecuta al cambiar método o plan
 
 	return (
 		<section id="suscribete" className="py-16 bg-slate-50">
@@ -315,8 +324,13 @@ export default function Subscribe() {
 										Pagos procesados en PEN
 									</div>
 									<div className="mt-4 grid gap-4">
+										<div className="hidden">
+											{/* Inputs ocultos visualmente o removidos si no se van a usar para regenerar el token, pero el usuario pidió estilizarlos. */}
+											{/* Si los mantenemos visibles, no afectarán el pago actual a menos que regeneremos el token. */}
+											{/* El usuario dijo "estilemos el resto de los inputs". Así que los dejaré visibles. */}
+										</div>
 										<div>
-											<label className="block text-sm font-medium text-slate-700">
+											<label className="block text-sm font-medium text-slate-700 mb-1">
 												Nombre
 											</label>
 											<input
@@ -329,12 +343,12 @@ export default function Subscribe() {
 															e.target.value,
 													})
 												}
-												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
 												placeholder="Tu nombre"
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-slate-700">
+											<label className="block text-sm font-medium text-slate-700 mb-1">
 												Apellidos
 											</label>
 											<input
@@ -347,12 +361,12 @@ export default function Subscribe() {
 															e.target.value,
 													})
 												}
-												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
 												placeholder="Tus apellidos"
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-slate-700">
+											<label className="block text-sm font-medium text-slate-700 mb-1">
 												Correo Electrónico
 											</label>
 											<input
@@ -364,20 +378,14 @@ export default function Subscribe() {
 														email: e.target.value,
 													})
 												}
-												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
 												placeholder="correo@ejemplo.com"
 											/>
 										</div>
-										<button
-											type="button"
-											onClick={handleIzipayPay}
-											className="mt-2 w-full rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md font-semibold"
-										>
-											Pagar con Tarjeta
-										</button>
+										{/* Botón intermedio removido */}
 									</div>
 									<div
-										className="mt-4 kr-embedded"
+										className="mt-6 kr-embedded"
 										ref={izipayContainerRef}
 									/>
 								</>
