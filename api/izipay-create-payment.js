@@ -17,29 +17,43 @@ export default async function handler(req, res) {
 		typeof req.body === "string"
 			? JSON.parse(req.body || "{}")
 			: req.body || {};
-	const planId = body.planId;
-	const email = body.email || "cliente@example.com";
 	const plans = {
 		mensual: { name: "Plan Mensual", amount: 9.99, currency: "PEN" },
 		unico: { name: "Plan Único", amount: 185.0, currency: "PEN" },
 	};
+
+	const { planId, firstName, lastName } = body;
+	const email = body.email || "cliente@example.com";
+
 	const plan = plans[planId] || plans.mensual;
 	const amountCents = Math.round(parseFloat(plan.amount) * 100);
 	const now = Date.now();
 
 	// Generate strict alphanumeric ID (no hyphens) for both Order and Transaction
-	// Izipay requires transactionId in JS to match what was sent to CreatePayment (which uses orderId)
 	const orderId = `EETV${now}`;
 	const transactionId = orderId;
 
 	// dateTimeTransaction: 16 digits required by SDK (Date.now() is 13 + 3 zeros)
 	const dateTimeTransaction = `${now}000`;
 
+	// Map generic customer data if missing
+	const customerFirstName = firstName || "Cliente";
+	const customerLastName = lastName || "General";
+
 	const payload = {
 		amount: amountCents,
 		currency: plan.currency,
 		orderId,
-		customer: { email },
+		customer: {
+			email: email,
+			reference: email, // merchantBuyerId usually maps to reference or uuid
+			billingDetails: {
+				firstName: customerFirstName,
+				lastName: customerLastName,
+				email: email,
+				country: "PE", // Default to PE or dynamic if available
+			},
+		},
 		paymentMethodType: "CARD",
 		transactionOptions: {
 			cardOptions: {

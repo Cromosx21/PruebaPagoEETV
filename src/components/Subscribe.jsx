@@ -153,6 +153,8 @@ export default function Subscribe() {
 				body: JSON.stringify({
 					planId: selected.id,
 					email: izipayData.email,
+					firstName: izipayData.firstName,
+					lastName: izipayData.lastName,
 				}),
 			});
 			const data = await res.json().catch(() => ({}));
@@ -195,7 +197,7 @@ export default function Subscribe() {
 					currency: currency || "PEN",
 					amount: amount,
 					processType: "AT",
-					merchantBuyerId: merchantCode,
+					merchantBuyerId: izipayData.email,
 					dateTimeTransaction: dateTimeTransaction,
 				},
 				billing: {
@@ -207,6 +209,8 @@ export default function Subscribe() {
 					typeForm: "pop-up",
 				},
 			};
+
+			console.log("Initializing Izipay with config:", iziConfig);
 
 			const checkout = new window.Izipay({ config: iziConfig });
 			checkout.LoadForm({
