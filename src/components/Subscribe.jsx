@@ -168,6 +168,8 @@ export default function Subscribe() {
 				publicKey,
 				merchantCode,
 				orderId,
+				transactionId,
+				dateTimeTransaction,
 				amount,
 				currency,
 			} = data;
@@ -185,7 +187,7 @@ export default function Subscribe() {
 			}
 
 			const iziConfig = {
-				transactionId: orderId,
+				transactionId: transactionId,
 				action: "pay",
 				merchantCode: merchantCode,
 				order: {
@@ -194,7 +196,7 @@ export default function Subscribe() {
 					amount: amount,
 					processType: "AT",
 					merchantBuyerId: merchantCode,
-					dateTimeTransaction: Date.now().toString(),
+					dateTimeTransaction: dateTimeTransaction,
 				},
 				billing: {
 					firstName: izipayData.firstName,

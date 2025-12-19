@@ -25,7 +25,16 @@ export default async function handler(req, res) {
 	};
 	const plan = plans[planId] || plans.mensual;
 	const amountCents = Math.round(parseFloat(plan.amount) * 100);
-	const orderId = `EETV-${Date.now()}`;
+	const now = Date.now();
+
+	// Generate strict alphanumeric ID (no hyphens) for both Order and Transaction
+	// Izipay requires transactionId in JS to match what was sent to CreatePayment (which uses orderId)
+	const orderId = `EETV${now}`;
+	const transactionId = orderId;
+
+	// dateTimeTransaction: 16 digits required by SDK (Date.now() is 13 + 3 zeros)
+	const dateTimeTransaction = `${now}000`;
+
 	const payload = {
 		amount: amountCents,
 		currency: plan.currency,
@@ -80,6 +89,8 @@ export default async function handler(req, res) {
 			publicKey,
 			merchantCode: user,
 			orderId,
+			transactionId,
+			dateTimeTransaction,
 			amount: (amountCents / 100).toFixed(2),
 			currency: plan.currency,
 		});
