@@ -292,257 +292,253 @@ export default function Subscribe() {
 					))}
 				</div>
 
-				{isUnico ? (
-					<div className="mt-10 grid md:grid-cols-4 gap-6">
-						<div className="rounded-2xl border bg-white p-6 shadow-sm">
-							<div className="text-lg font-semibold">
-								Método de pago
-							</div>
-							<div className="mt-4 flex flex-wrap gap-2">
-								<button
-									type="button"
-									onClick={() => setMethod("paypal")}
-									className={`px-3 py-2 rounded-lg border ${
-										method === "paypal"
-											? "bg-primary text-white border-primary"
-											: "bg-white text-slate-700"
-									}`}
-								>
-									PayPal
-								</button>
-								<button
-									type="button"
-									onClick={() => setMethod("izipay")}
-									className={`px-3 py-2 rounded-lg border ${
-										method === "izipay"
-											? "bg-primary text-white border-primary"
-											: "bg-white text-slate-700"
-									}`}
-								>
-									Izipay (Tarjeta)
-								</button>
-								<button
-									type="button"
-									onClick={() => setMethod("qr")}
-									className={`px-3 py-2 rounded-lg border ${
-										method === "qr"
-											? "bg-primary text-white border-primary"
-											: "bg-white text-slate-700"
-									}`}
-								>
-									QR (Yape/Plin)
-								</button>
-							</div>
+				<div
+					className={`mt-10 gap-6 ${
+						isUnico ? "grid md:grid-cols-4" : "hidden"
+					}`}
+				>
+					<div className="rounded-2xl border bg-white p-6 shadow-sm">
+						<div className="text-lg font-semibold">
+							Método de pago
 						</div>
-						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2 relative">
-							{/* Contenedor PayPal */}
-							{method === "paypal" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con PayPal
-									</div>
-									<div className="mt-1 text-sm text-slate-600">
-										Pagos procesados en USD
-									</div>
-									<div
-										className="mt-4"
-										ref={paypalContainerRef}
-									/>
-								</>
-							)}
-
-							{/* Contenedor Izipay - Siempre en el DOM pero oculto si no es el método activo */}
-							<div
-								style={{
-									display:
-										method === "izipay" ? "block" : "none",
-								}}
+						<div className="mt-4 flex flex-wrap gap-2">
+							<button
+								type="button"
+								onClick={() => setMethod("paypal")}
+								className={`px-3 py-2 rounded-lg border ${
+									method === "paypal"
+										? "bg-primary text-white border-primary"
+										: "bg-white text-slate-700"
+								}`}
 							>
+								PayPal
+							</button>
+							<button
+								type="button"
+								onClick={() => setMethod("izipay")}
+								className={`px-3 py-2 rounded-lg border ${
+									method === "izipay"
+										? "bg-primary text-white border-primary"
+										: "bg-white text-slate-700"
+								}`}
+							>
+								Izipay (Tarjeta)
+							</button>
+							<button
+								type="button"
+								onClick={() => setMethod("qr")}
+								className={`px-3 py-2 rounded-lg border ${
+									method === "qr"
+										? "bg-primary text-white border-primary"
+										: "bg-white text-slate-700"
+								}`}
+							>
+								QR (Yape/Plin)
+							</button>
+						</div>
+					</div>
+					<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2 relative">
+						{/* Contenedor PayPal */}
+						{method === "paypal" && (
+							<>
 								<div className="text-lg font-semibold">
-									Pagar con Tarjeta (Izipay)
+									Pagar con PayPal
 								</div>
 								<div className="mt-1 text-sm text-slate-600">
-									Pagos procesados en PEN
-								</div>
-								<div className="mt-4 grid gap-4">
-									<div>
-										<label className="block text-sm font-medium text-slate-700 mb-1">
-											Nombre
-										</label>
-										<input
-											type="text"
-											value={izipayData.firstName}
-											onChange={(e) =>
-												setIzipayData({
-													...izipayData,
-													firstName: e.target.value,
-												})
-											}
-											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-											placeholder="Tu nombre"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-slate-700 mb-1">
-											Apellidos
-										</label>
-										<input
-											type="text"
-											value={izipayData.lastName}
-											onChange={(e) =>
-												setIzipayData({
-													...izipayData,
-													lastName: e.target.value,
-												})
-											}
-											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-											placeholder="Tus apellidos"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-slate-700 mb-1">
-											Correo Electrónico
-										</label>
-										<input
-											type="email"
-											value={izipayData.email}
-											onChange={(e) =>
-												setIzipayData({
-													...izipayData,
-													email: e.target.value,
-												})
-											}
-											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-											placeholder="correo@ejemplo.com"
-										/>
-									</div>
+									Pagos procesados en USD
 								</div>
 								<div
-									className="mt-6 kr-embedded"
-									ref={izipayContainerRef}
+									className="mt-4"
+									ref={paypalContainerRef}
 								/>
-							</div>
+							</>
+						)}
 
-							{/* Contenedor QR */}
-							{method === "qr" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con QR (Yape/Plin)
-									</div>
-									<div className="mt-4 grid md:grid-cols-2 gap-4">
-										<div className="rounded-lg border p-4">
-											<div className="font-medium">
-												Yape
-											</div>
-											<div className="mt-2">
-												{yapeQr ? (
-													<img
-														src={yapeQr}
-														alt="QR Yape"
-														className="w-full rounded"
-													/>
-												) : (
-													<div className="h-40 flex items-center justify-center text-sm text-slate-500">
-														QR de Yape no
-														configurado
-													</div>
-												)}
-											</div>
-											<div className="mt-2 text-sm text-slate-700">
-												Número: {yapeNumber}
-											</div>
-										</div>
-										<div className="rounded-lg border p-4">
-											<div className="font-medium">
-												Plin
-											</div>
-											<div className="mt-2">
-												{plinQr ? (
-													<img
-														src={plinQr}
-														alt="QR Plin"
-														className="w-full rounded"
-													/>
-												) : (
-													<div className="h-40 flex items-center justify-center text-sm text-slate-500">
-														QR de Plin no
-														configurado
-													</div>
-												)}
-											</div>
-											<div className="mt-2 text-sm text-slate-700">
-												Número: {plinNumber}
-											</div>
-										</div>
-									</div>
-									<button
-										type="button"
-										className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-										onClick={() => {
-											const msg = encodeURIComponent(
-												`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`
-											);
-											const waUrl = `https://wa.me/${whatsappNumber.replace(
-												/[^+\d]/g,
-												""
-											)}?text=${msg}`;
-											window.open(waUrl, "_blank");
-										}}
-									>
-										Enviar voucher por WhatsApp
-									</button>
-								</>
-							)}
-						</div>
-						<div className="hidden"></div>
-					</div>
-				) : (
-					<div className="mt-10 grid md:grid-cols-2 gap-6">
-						<div className="rounded-2xl border bg-white p-6 shadow-sm">
+						{/* Contenedor Izipay - Siempre en el DOM pero oculto si no es el método activo */}
+						<div
+							style={{
+								display: method === "izipay" ? "block" : "none",
+							}}
+						>
 							<div className="text-lg font-semibold">
-								Suscríbete en nuestras redes
+								Pagar con Tarjeta (Izipay)
 							</div>
 							<div className="mt-1 text-sm text-slate-600">
-								Plan Mensual disponible vía redes sociales
+								Pagos procesados en PEN
 							</div>
-							<div className="mt-4 grid gap-3">
-								<a
-									href="https://www.youtube.com"
-									target="_blank"
-									rel="noopener"
-									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-								>
-									YouTube
-								</a>
-								<a
-									href="https://www.facebook.com"
-									target="_blank"
-									rel="noopener"
-									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-								>
-									Facebook
-								</a>
-								<a
-									href="https://www.tiktok.com"
-									target="_blank"
-									rel="noopener"
-									className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
-								>
-									TikTok
-								</a>
+							<div className="mt-4 grid gap-4">
+								<div>
+									<label className="block text-sm font-medium text-slate-700 mb-1">
+										Nombre
+									</label>
+									<input
+										type="text"
+										value={izipayData.firstName}
+										onChange={(e) =>
+											setIzipayData({
+												...izipayData,
+												firstName: e.target.value,
+											})
+										}
+										className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+										placeholder="Tu nombre"
+									/>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-slate-700 mb-1">
+										Apellidos
+									</label>
+									<input
+										type="text"
+										value={izipayData.lastName}
+										onChange={(e) =>
+											setIzipayData({
+												...izipayData,
+												lastName: e.target.value,
+											})
+										}
+										className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+										placeholder="Tus apellidos"
+									/>
+								</div>
+								<div>
+									<label className="block text-sm font-medium text-slate-700 mb-1">
+										Correo Electrónico
+									</label>
+									<input
+										type="email"
+										value={izipayData.email}
+										onChange={(e) =>
+											setIzipayData({
+												...izipayData,
+												email: e.target.value,
+											})
+										}
+										className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+										placeholder="correo@ejemplo.com"
+									/>
+								</div>
 							</div>
+							<div
+								className="mt-6 kr-embedded"
+								ref={izipayContainerRef}
+							/>
 						</div>
-						<div className="rounded-2xl border bg-white p-6 shadow-sm">
-							<div className="text-lg font-semibold">
-								Información
-							</div>
-							<div className="mt-1 text-sm text-slate-600">
-								Selecciona Plan Único para pagar con PayPal o
-								Izipay
-							</div>
+
+						{/* Contenedor QR */}
+						{method === "qr" && (
+							<>
+								<div className="text-lg font-semibold">
+									Pagar con QR (Yape/Plin)
+								</div>
+								<div className="mt-4 grid md:grid-cols-2 gap-4">
+									<div className="rounded-lg border p-4">
+										<div className="font-medium">Yape</div>
+										<div className="mt-2">
+											{yapeQr ? (
+												<img
+													src={yapeQr}
+													alt="QR Yape"
+													className="w-full rounded"
+												/>
+											) : (
+												<div className="h-40 flex items-center justify-center text-sm text-slate-500">
+													QR de Yape no configurado
+												</div>
+											)}
+										</div>
+										<div className="mt-2 text-sm text-slate-700">
+											Número: {yapeNumber}
+										</div>
+									</div>
+									<div className="rounded-lg border p-4">
+										<div className="font-medium">Plin</div>
+										<div className="mt-2">
+											{plinQr ? (
+												<img
+													src={plinQr}
+													alt="QR Plin"
+													className="w-full rounded"
+												/>
+											) : (
+												<div className="h-40 flex items-center justify-center text-sm text-slate-500">
+													QR de Plin no configurado
+												</div>
+											)}
+										</div>
+										<div className="mt-2 text-sm text-slate-700">
+											Número: {plinNumber}
+										</div>
+									</div>
+								</div>
+								<button
+									type="button"
+									className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 hover:bg-dark/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+									onClick={() => {
+										const msg = encodeURIComponent(
+											`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`
+										);
+										const waUrl = `https://wa.me/${whatsappNumber.replace(
+											/[^+\d]/g,
+											""
+										)}?text=${msg}`;
+										window.open(waUrl, "_blank");
+									}}
+								>
+									Enviar voucher por WhatsApp
+								</button>
+							</>
+						)}
+					</div>
+					<div className="hidden"></div>
+				</div>
+
+				<div
+					className={`mt-10 gap-6 ${
+						!isUnico ? "grid md:grid-cols-2" : "hidden"
+					}`}
+				>
+					<div className="rounded-2xl border bg-white p-6 shadow-sm">
+						<div className="text-lg font-semibold">
+							Suscríbete en nuestras redes
+						</div>
+						<div className="mt-1 text-sm text-slate-600">
+							Plan Mensual disponible vía redes sociales
+						</div>
+						<div className="mt-4 grid gap-3">
+							<a
+								href="https://www.youtube.com"
+								target="_blank"
+								rel="noopener"
+								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+							>
+								YouTube
+							</a>
+							<a
+								href="https://www.facebook.com"
+								target="_blank"
+								rel="noopener"
+								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+							>
+								Facebook
+							</a>
+							<a
+								href="https://www.tiktok.com"
+								target="_blank"
+								rel="noopener"
+								className="inline-flex items-center justify-center rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+							>
+								TikTok
+							</a>
 						</div>
 					</div>
-				)}
+					<div className="rounded-2xl border bg-white p-6 shadow-sm">
+						<div className="text-lg font-semibold">Información</div>
+						<div className="mt-1 text-sm text-slate-600">
+							Selecciona Plan Único para pagar con PayPal o Izipay
+						</div>
+					</div>
+				</div>
 
 				{status && (
 					<div className="mt-6 rounded-lg border bg-white p-4 text-sm">
