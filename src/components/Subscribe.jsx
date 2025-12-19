@@ -334,7 +334,8 @@ export default function Subscribe() {
 								</button>
 							</div>
 						</div>
-						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2">
+						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2 relative">
+							{/* Contenedor PayPal */}
 							{method === "paypal" && (
 								<>
 									<div className="text-lg font-semibold">
@@ -349,81 +350,80 @@ export default function Subscribe() {
 									/>
 								</>
 							)}
-							{method === "izipay" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con Tarjeta (Izipay)
+
+							{/* Contenedor Izipay - Siempre en el DOM pero oculto si no es el método activo */}
+							<div
+								style={{
+									display:
+										method === "izipay" ? "block" : "none",
+								}}
+							>
+								<div className="text-lg font-semibold">
+									Pagar con Tarjeta (Izipay)
+								</div>
+								<div className="mt-1 text-sm text-slate-600">
+									Pagos procesados en PEN
+								</div>
+								<div className="mt-4 grid gap-4">
+									<div>
+										<label className="block text-sm font-medium text-slate-700 mb-1">
+											Nombre
+										</label>
+										<input
+											type="text"
+											value={izipayData.firstName}
+											onChange={(e) =>
+												setIzipayData({
+													...izipayData,
+													firstName: e.target.value,
+												})
+											}
+											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+											placeholder="Tu nombre"
+										/>
 									</div>
-									<div className="mt-1 text-sm text-slate-600">
-										Pagos procesados en PEN
+									<div>
+										<label className="block text-sm font-medium text-slate-700 mb-1">
+											Apellidos
+										</label>
+										<input
+											type="text"
+											value={izipayData.lastName}
+											onChange={(e) =>
+												setIzipayData({
+													...izipayData,
+													lastName: e.target.value,
+												})
+											}
+											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+											placeholder="Tus apellidos"
+										/>
 									</div>
-									<div className="mt-4 grid gap-4">
-										<div className="hidden">
-											{/* Inputs ocultos visualmente o removidos si no se van a usar para regenerar el token, pero el usuario pidió estilizarlos. */}
-											{/* Si los mantenemos visibles, no afectarán el pago actual a menos que regeneremos el token. */}
-											{/* El usuario dijo "estilemos el resto de los inputs". Así que los dejaré visibles. */}
-										</div>
-										<div>
-											<label className="block text-sm font-medium text-slate-700 mb-1">
-												Nombre
-											</label>
-											<input
-												type="text"
-												value={izipayData.firstName}
-												onChange={(e) =>
-													setIzipayData({
-														...izipayData,
-														firstName:
-															e.target.value,
-													})
-												}
-												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-												placeholder="Tu nombre"
-											/>
-										</div>
-										<div>
-											<label className="block text-sm font-medium text-slate-700 mb-1">
-												Apellidos
-											</label>
-											<input
-												type="text"
-												value={izipayData.lastName}
-												onChange={(e) =>
-													setIzipayData({
-														...izipayData,
-														lastName:
-															e.target.value,
-													})
-												}
-												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-												placeholder="Tus apellidos"
-											/>
-										</div>
-										<div>
-											<label className="block text-sm font-medium text-slate-700 mb-1">
-												Correo Electrónico
-											</label>
-											<input
-												type="email"
-												value={izipayData.email}
-												onChange={(e) =>
-													setIzipayData({
-														...izipayData,
-														email: e.target.value,
-													})
-												}
-												className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
-												placeholder="correo@ejemplo.com"
-											/>
-										</div>
-										{/* Botón intermedio removido */}
+									<div>
+										<label className="block text-sm font-medium text-slate-700 mb-1">
+											Correo Electrónico
+										</label>
+										<input
+											type="email"
+											value={izipayData.email}
+											onChange={(e) =>
+												setIzipayData({
+													...izipayData,
+													email: e.target.value,
+												})
+											}
+											className="w-full rounded-lg border-slate-200 focus:border-primary focus:ring-primary transition-colors shadow-sm py-2.5"
+											placeholder="correo@ejemplo.com"
+										/>
 									</div>
-									<div
-										className="mt-6 kr-embedded"
-										ref={izipayContainerRef}
-									/>
-								</>
-							)}
+								</div>
+								<div
+									className="mt-6 kr-embedded"
+									ref={izipayContainerRef}
+								/>
+							</div>
+
+							{/* Contenedor QR */}
 							{method === "qr" && (
 								<>
 									<div className="text-lg font-semibold">
