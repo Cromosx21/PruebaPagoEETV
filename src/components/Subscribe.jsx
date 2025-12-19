@@ -21,6 +21,11 @@ export default function Subscribe() {
 	const [selected, setSelected] = useState(PLANS[0]);
 	const [status, setStatus] = useState("");
 	const [method, setMethod] = useState("paypal");
+	const [izipayData, setIzipayData] = useState({
+		firstName: "",
+		lastName: "",
+		email: "",
+	});
 	const paypalContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
 	const krScriptRef = useRef(null);
@@ -38,10 +43,22 @@ export default function Subscribe() {
 		"+51969673200";
 	const yapeQr =
 		(import.meta.env.VITE_YAPE_QR_URL || "").toString().trim() ||
-		"/yape-qr.png";
+		"/yape.avif";
 	const plinQr =
 		(import.meta.env.VITE_PLIN_QR_URL || "").toString().trim() ||
 		"/plin-qr.svg";
+
+	useEffect(() => {
+		const scriptUrl =
+			import.meta.env.VITE_IZIPAY_SDK_URL ||
+			"https://sandbox-checkout.izipay.pe/payments/v1/js/index.js";
+		if (!document.querySelector(`script[src="${scriptUrl}"]`)) {
+			const script = document.createElement("script");
+			script.src = scriptUrl;
+			script.async = true;
+			document.head.appendChild(script);
+		}
+	}, []);
 
 	useEffect(() => {
 		const rawId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
@@ -118,148 +135,100 @@ export default function Subscribe() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selected.id, method]);
 
-	useEffect(() => {
-		const initIzipay = async () => {
-			try {
-				if (!isUnico || method !== "izipay") {
-					if (izipayContainerRef.current) {
-						izipayContainerRef.current.innerHTML = "";
-					}
-					return;
-				}
-				setStatus("");
-				const res = await fetch("/api/izipay-create-payment", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						planId: selected.id,
-					}),
-				});
-				const data = await res.json().catch(() => ({}));
-				if (!res.ok) {
-					const base =
-						data?.error || "No se pudo iniciar el pago con Izipay";
-					const more = data?.detail?.message
-						? `: ${data.detail.message}`
-						: "";
-					setStatus(base + more);
-					return;
-				}
-				const formToken = data?.formToken;
-				const publicKey = data?.publicKey;
-				if (!formToken || !publicKey) {
-					setStatus("Respuesta inválida del servidor de pagos");
-					return;
-				}
-				if (izipayContainerRef.current) {
-					izipayContainerRef.current.innerHTML = "";
-					const embedded = document.createElement("div");
-					embedded.className = "kr-embedded";
-					embedded.setAttribute("kr-form-token", formToken);
-					const pan = document.createElement("div");
-					pan.className = "kr-pan";
-					const expiry = document.createElement("div");
-					expiry.className = "kr-expiry";
-					const cvv = document.createElement("div");
-					cvv.className = "kr-security-code";
-					const firstName = document.createElement("div");
-					firstName.className = "kr-first-name";
-					const lastName = document.createElement("div");
-					lastName.className = "kr-last-name";
-					const emailField = document.createElement("div");
-					emailField.className = "kr-email";
-					const btn = document.createElement("button");
-					btn.className = "kr-payment-button";
-					const err = document.createElement("div");
-					err.className = "kr-form-error";
-					embedded.appendChild(pan);
-					embedded.appendChild(expiry);
-					embedded.appendChild(cvv);
-					embedded.appendChild(firstName);
-					embedded.appendChild(lastName);
-					embedded.appendChild(emailField);
-					embedded.appendChild(btn);
-					embedded.appendChild(err);
-					izipayContainerRef.current.appendChild(embedded);
-					const existingCss = document.querySelector(
-						'link[href="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css"]'
-					);
-					if (!existingCss) {
-						const css = document.createElement("link");
-						css.rel = "stylesheet";
-						css.href =
-							"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
-						document.head.appendChild(css);
-					}
-					const ensureScriptLoaded = () =>
-						new Promise((resolve, reject) => {
-							if (krLoadedRef.current && window.KR) {
-								return resolve();
-							}
-							if (!krScriptRef.current) {
-								const script = document.createElement("script");
-								script.src =
-									"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
-								script.setAttribute("kr-public-key", publicKey);
-								script.setAttribute(
-									"kr-post-url-success",
-									"/api/izipay-success"
-								);
-								script.setAttribute(
-									"kr-get-url-refused",
-									"/?payment=refused"
-								);
-								script.setAttribute("kr-language", "es-ES");
-								script.onload = () => {
-									krLoadedRef.current = true;
-									resolve();
-								};
-								script.onerror = () => {
-									reject(
-										new Error(
-											"No se pudo cargar la pasarela de Izipay"
-										)
-									);
-								};
-								document.head.appendChild(script);
-								krScriptRef.current = script;
-								setStatus("Cargando pasarela de Izipay...");
-							} else {
-								if (krLoadedRef.current && window.KR) {
-									resolve();
-								} else {
-									krScriptRef.current.onload = () => {
-										krLoadedRef.current = true;
-										resolve();
-									};
-									krScriptRef.current.onerror = () => {
-										reject(
-											new Error(
-												"No se pudo cargar la pasarela de Izipay"
-											)
-										);
-									};
-								}
-							}
-						});
-					await ensureScriptLoaded();
-					if (
-						window.KR &&
-						typeof window.KR.setFormToken === "function"
-					) {
-						window.KR.setFormToken(formToken);
-						setStatus("");
-					} else {
-						setStatus("Izipay no inicializado correctamente");
-					}
-				}
-			} catch {
-				setStatus("Error interpretando respuesta del pago");
+	const handleIzipayPay = async () => {
+		if (
+			!izipayData.firstName ||
+			!izipayData.lastName ||
+			!izipayData.email
+		) {
+			setStatus("Por favor complete todos los campos requeridos");
+			return;
+		}
+
+		try {
+			setStatus("Iniciando pago con Izipay...");
+			const res = await fetch("/api/izipay-create-payment", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					planId: selected.id,
+					email: izipayData.email,
+				}),
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				setStatus(
+					data?.error || "Error al conectar con el servidor de pagos"
+				);
+				return;
 			}
-		};
-		initIzipay();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [selected.id, method]);
+
+			const {
+				formToken,
+				publicKey,
+				merchantCode,
+				orderId,
+				amount,
+				currency,
+			} = data;
+
+			if (!formToken || !publicKey) {
+				setStatus("Respuesta inválida del servidor");
+				return;
+			}
+
+			if (typeof window.Izipay !== "function") {
+				setStatus(
+					"La pasarela de Izipay no está cargada correctamente"
+				);
+				return;
+			}
+
+			const iziConfig = {
+				config: {
+					transactionId: orderId,
+					action: "pay",
+					merchantCode: merchantCode,
+					order: {
+						orderNumber: orderId,
+						currency: currency || "PEN",
+						amount: amount,
+						processType: "AT",
+						merchantBuyerId: merchantCode,
+						dateTimeTransaction: Date.now().toString(),
+					},
+					billing: {
+						firstName: izipayData.firstName,
+						lastName: izipayData.lastName,
+						email: izipayData.email,
+					},
+					render: {
+						typeForm: "pop-up",
+					},
+				},
+			};
+
+			const checkout = new window.Izipay({ config: iziConfig });
+			checkout.LoadForm({
+				authorization: formToken,
+				keyRSA: publicKey,
+				callbackResponse: (response) => {
+					console.log("Izipay response:", response);
+					if (response.code === "00" || response.status === "PAID") {
+						setStatus("Pago realizado con éxito");
+					} else {
+						setStatus(
+							"El pago no se completó o fue rechazado: " +
+								(response.message || "")
+						);
+					}
+				},
+			});
+		} catch (error) {
+			console.error(error);
+			setStatus("Error al procesar el pago con Izipay");
+		}
+	};
 
 	return (
 		<section id="suscribete" className="py-16 bg-slate-50">
@@ -365,6 +334,68 @@ export default function Subscribe() {
 									</div>
 									<div className="mt-1 text-sm text-slate-600">
 										Pagos procesados en PEN
+									</div>
+									<div className="mt-4 grid gap-4">
+										<div>
+											<label className="block text-sm font-medium text-slate-700">
+												Nombre
+											</label>
+											<input
+												type="text"
+												value={izipayData.firstName}
+												onChange={(e) =>
+													setIzipayData({
+														...izipayData,
+														firstName:
+															e.target.value,
+													})
+												}
+												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												placeholder="Tu nombre"
+											/>
+										</div>
+										<div>
+											<label className="block text-sm font-medium text-slate-700">
+												Apellidos
+											</label>
+											<input
+												type="text"
+												value={izipayData.lastName}
+												onChange={(e) =>
+													setIzipayData({
+														...izipayData,
+														lastName:
+															e.target.value,
+													})
+												}
+												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												placeholder="Tus apellidos"
+											/>
+										</div>
+										<div>
+											<label className="block text-sm font-medium text-slate-700">
+												Correo Electrónico
+											</label>
+											<input
+												type="email"
+												value={izipayData.email}
+												onChange={(e) =>
+													setIzipayData({
+														...izipayData,
+														email: e.target.value,
+													})
+												}
+												className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+												placeholder="correo@ejemplo.com"
+											/>
+										</div>
+										<button
+											type="button"
+											onClick={handleIzipayPay}
+											className="mt-2 w-full rounded-lg bg-primary text-white px-5 py-3 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md font-semibold"
+										>
+											Pagar con Tarjeta
+										</button>
 									</div>
 									<div
 										className="mt-4"

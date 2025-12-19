@@ -75,7 +75,14 @@ export default async function handler(req, res) {
 			});
 			return;
 		}
-		res.status(200).json({ formToken, publicKey });
+		res.status(200).json({
+			formToken,
+			publicKey,
+			merchantCode: user,
+			orderId,
+			amount: (amountCents / 100).toFixed(2),
+			currency: plan.currency,
+		});
 	} catch {
 		res.status(500).json({ error: "Izipay REST error" });
 	}
