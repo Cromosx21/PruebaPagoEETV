@@ -185,26 +185,24 @@ export default function Subscribe() {
 			}
 
 			const iziConfig = {
-				config: {
-					transactionId: orderId,
-					action: "pay",
-					merchantCode: merchantCode,
-					order: {
-						orderNumber: orderId,
-						currency: currency || "PEN",
-						amount: amount,
-						processType: "AT",
-						merchantBuyerId: merchantCode,
-						dateTimeTransaction: Date.now().toString(),
-					},
-					billing: {
-						firstName: izipayData.firstName,
-						lastName: izipayData.lastName,
-						email: izipayData.email,
-					},
-					render: {
-						typeForm: "pop-up",
-					},
+				transactionId: orderId,
+				action: "pay",
+				merchantCode: merchantCode,
+				order: {
+					orderNumber: orderId,
+					currency: currency || "PEN",
+					amount: amount,
+					processType: "AT",
+					merchantBuyerId: merchantCode,
+					dateTimeTransaction: Date.now().toString(),
+				},
+				billing: {
+					firstName: izipayData.firstName,
+					lastName: izipayData.lastName,
+					email: izipayData.email,
+				},
+				render: {
+					typeForm: "pop-up",
 				},
 			};
 
