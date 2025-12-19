@@ -23,6 +23,8 @@ export default function Subscribe() {
 	const [method, setMethod] = useState("paypal");
 	const paypalContainerRef = useRef(null);
 	const izipayContainerRef = useRef(null);
+	const krScriptRef = useRef(null);
+	const krLoadedRef = useRef(false);
 	const colorClasses = { primary: "bg-primary", secondary: "bg-secondary" };
 	const isUnico = selected.id === "unico";
 	const yapeNumber =
@@ -36,7 +38,7 @@ export default function Subscribe() {
 		"+51969673200";
 	const yapeQr =
 		(import.meta.env.VITE_YAPE_QR_URL || "").toString().trim() ||
-		"/yape.avif";
+		"/yape-qr.png";
 	const plinQr =
 		(import.meta.env.VITE_PLIN_QR_URL || "").toString().trim() ||
 		"/plin-qr.svg";
@@ -160,6 +162,12 @@ export default function Subscribe() {
 					expiry.className = "kr-expiry";
 					const cvv = document.createElement("div");
 					cvv.className = "kr-security-code";
+					const firstName = document.createElement("div");
+					firstName.className = "kr-first-name";
+					const lastName = document.createElement("div");
+					lastName.className = "kr-last-name";
+					const emailField = document.createElement("div");
+					emailField.className = "kr-email";
 					const btn = document.createElement("button");
 					btn.className = "kr-payment-button";
 					const err = document.createElement("div");
@@ -167,6 +175,9 @@ export default function Subscribe() {
 					embedded.appendChild(pan);
 					embedded.appendChild(expiry);
 					embedded.appendChild(cvv);
+					embedded.appendChild(firstName);
+					embedded.appendChild(lastName);
+					embedded.appendChild(emailField);
 					embedded.appendChild(btn);
 					embedded.appendChild(err);
 					izipayContainerRef.current.appendChild(embedded);
@@ -180,33 +191,67 @@ export default function Subscribe() {
 							"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/ext/classic-reset.css";
 						document.head.appendChild(css);
 					}
-					const existingScript = document.querySelector(
-						'script[src="https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js"]'
-					);
-					if (existingScript) {
-						existingScript.remove();
-					}
-					const script = document.createElement("script");
-					script.src =
-						"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
-					script.setAttribute("kr-public-key", publicKey);
-					script.setAttribute(
-						"kr-post-url-success",
-						"/api/izipay-success"
-					);
-					script.setAttribute(
-						"kr-get-url-refused",
-						"/?payment=refused"
-					);
-					script.setAttribute("kr-language", "es-ES");
-					script.onload = () => {
+					const ensureScriptLoaded = () =>
+						new Promise((resolve, reject) => {
+							if (krLoadedRef.current && window.KR) {
+								return resolve();
+							}
+							if (!krScriptRef.current) {
+								const script = document.createElement("script");
+								script.src =
+									"https://static.micuentaweb.pe/static/js/krypton-client/V4.0/stable/kr-payment-form.min.js";
+								script.setAttribute("kr-public-key", publicKey);
+								script.setAttribute(
+									"kr-post-url-success",
+									"/api/izipay-success"
+								);
+								script.setAttribute(
+									"kr-get-url-refused",
+									"/?payment=refused"
+								);
+								script.setAttribute("kr-language", "es-ES");
+								script.onload = () => {
+									krLoadedRef.current = true;
+									resolve();
+								};
+								script.onerror = () => {
+									reject(
+										new Error(
+											"No se pudo cargar la pasarela de Izipay"
+										)
+									);
+								};
+								document.head.appendChild(script);
+								krScriptRef.current = script;
+								setStatus("Cargando pasarela de Izipay...");
+							} else {
+								if (krLoadedRef.current && window.KR) {
+									resolve();
+								} else {
+									krScriptRef.current.onload = () => {
+										krLoadedRef.current = true;
+										resolve();
+									};
+									krScriptRef.current.onerror = () => {
+										reject(
+											new Error(
+												"No se pudo cargar la pasarela de Izipay"
+											)
+										);
+									};
+								}
+							}
+						});
+					await ensureScriptLoaded();
+					if (
+						window.KR &&
+						typeof window.KR.setFormToken === "function"
+					) {
+						window.KR.setFormToken(formToken);
 						setStatus("");
-					};
-					script.onerror = () => {
-						setStatus("No se pudo cargar la pasarela de Izipay");
-					};
-					document.head.appendChild(script);
-					setStatus("Cargando pasarela de Izipay...");
+					} else {
+						setStatus("Izipay no inicializado correctamente");
+					}
 				}
 			} catch {
 				setStatus("Error interpretando respuesta del pago");
