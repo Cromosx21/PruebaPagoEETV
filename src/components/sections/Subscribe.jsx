@@ -50,19 +50,19 @@ export default function Subscribe() {
 		accent: "bg-accent",
 	};
 
-	const yapeNumber = (import.meta.env.VITE_YAPE_NUMBER || "969673200")
+	const yapeNumber = (import.meta.env.VITE_YAPE_NUMBER || "932914462")
 		.toString()
 		.trim();
-	const plinNumber = (import.meta.env.VITE_PLIN_NUMBER || "969673200")
+	const plinNumber = (import.meta.env.VITE_PLIN_NUMBER || "932914462")
 		.toString()
 		.trim();
 	const whatsappNumber = (
-		import.meta.env.VITE_WHATSAPP_NUMBER || "+51969673200"
+		import.meta.env.VITE_WHATSAPP_NUMBER || "+51932914462"
 	)
 		.toString()
 		.trim();
-	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/yape.avif";
-	const plinQr = import.meta.env.VITE_PLIN_QR_URL || "/plin-qr.svg";
+	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
+	const plinQr = import.meta.env.VITE_PLIN_QR_URL || "/Yape-qr.jpeg";
 
 	// Actualizar método de pago al cambiar de plan
 	useEffect(() => {
@@ -447,6 +447,9 @@ export default function Subscribe() {
 												/>
 											</div>
 											<div className="mt-2 text-sm text-slate-700">
+												Nombre: Jessica Milagros Zena
+												Torres
+												<br />
 												Número: {yapeNumber}
 											</div>
 										</div>
@@ -462,6 +465,9 @@ export default function Subscribe() {
 												/>
 											</div>
 											<div className="mt-2 text-sm text-slate-700">
+												Nombre: Jessica Milagros Zena
+												Torres
+												<br />
 												Número: {plinNumber}
 											</div>
 										</div>

@@ -1,13 +1,16 @@
+import Flag from "react-world-flags";
+
 const anchorHour = 19;
 const peruLabel = "07:00 pm";
 const countries = [
-	{ name: "Perú", flag: "🇵🇪", offset: 0 },
-	{ name: "Colombia", flag: "🇨🇴", offset: 0 },
-	{ name: "Ecuador", flag: "🇪🇨", offset: 0 },
-	{ name: "México (CDMX)", flag: "🇲🇽", offset: -1 },
-	{ name: "Bolivia", flag: "🇧🇴", offset: 1 },
-	{ name: "Chile", flag: "🇨🇱", offset: 2 },
-	{ name: "Argentina", flag: "🇦🇷", offset: 2 },
+	{ name: "Perú", code: "PE", offset: 0 },
+	{ name: "Colombia", code: "CO", offset: 0 },
+	{ name: "Ecuador", code: "EC", offset: 0 },
+	{ name: "México (CDMX)", code: "MX", offset: -1 },
+	{ name: "Bolivia", code: "BO", offset: 1 },
+	{ name: "Chile", code: "CL", offset: 2 },
+	{ name: "Argentina", code: "AR", offset: 2 },
+	{ name: "EE.UU", code: "US", offset: 2 },
 ];
 
 function formatHour(h) {
@@ -94,9 +97,12 @@ export default function Schedule() {
 											className="flex items-center justify-between rounded-lg border px-3 py-2"
 										>
 											<div className="flex items-center gap-2">
-												<span className="text-xl">
-													{c.flag}
-												</span>
+												<div className="w-8 h-5 relative overflow-hidden rounded-[2px] shadow-sm flex-shrink-0">
+													<Flag
+														code={c.code}
+														className="absolute inset-0 w-full h-full object-cover"
+													/>
+												</div>
 												<span className="text-sm">
 													{c.name}
 												</span>

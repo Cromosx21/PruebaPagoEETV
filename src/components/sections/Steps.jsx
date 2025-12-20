@@ -17,7 +17,7 @@ export default function Steps() {
 							Elige tu Plan
 						</h3>
 						<p className="mt-2 text-slate-600">
-							Selecciona Plan Mensual o Plan Único y realiza tu
+							Selecciona Plan Mensual, Plan ORO o Plan Único y realiza tu
 							suscripción.
 						</p>
 					</div>
