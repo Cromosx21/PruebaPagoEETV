@@ -1,6 +1,6 @@
 export default function Stats() {
   const stats = [
-    { label: "Clases gratuitas", value: "+360" },
+    { label: "Clases gratuitas", value: "+160" },
     { label: "Páginas en el material", value: "+850" },
     { label: "Seguidores", value: "+3 M" },
   ]

@@ -1,0 +1,92 @@
+DOCUMENTACIÓN DEL PROYECTO EASY ENGLISH TV
+
+================================================================================
+1. DESCRIPCIÓN GENERAL
+================================================================================
+Este proyecto es una Landing Page para vender cursos de inglés y material educativo.
+Cuenta con una interfaz moderna y adaptativa (Responsive) y un sistema de pagos integrado.
+
+Tecnologías principales:
+- Frontend: React (Vite)
+- Estilos: Tailwind CSS
+- Backend: Node.js (Express) para gestionar pagos y correos.
+- Pagos: Stripe (Tarjetas) y PayPal.
+- Email: Nodemailer (Envío automático de PDFs).
+
+================================================================================
+2. INSTALACIÓN Y PUESTA EN MARCHA
+================================================================================
+
+A. Requisitos previos
+   - Tener Node.js instalado en tu computadora.
+   - Tener una cuenta de Gmail (para el envío de correos) con "Contraseña de Aplicación" generada.
+   - Tener cuenta en Stripe (para obtener las claves API).
+   - Tener cuenta Developer en PayPal (para el Client ID).
+
+B. Configuración de Variables
+   1. En la carpeta raíz, encontrarás un archivo llamado `.env.example`.
+   2. Haz una copia de este archivo y renómbralo a `.env`.
+   3. Abre el archivo `.env` y rellena los datos:
+      - VITE_STRIPE_PUBLIC_KEY: Tu clave pública de Stripe.
+      - STRIPE_SECRET_KEY: Tu clave secreta de Stripe.
+      - VITE_PAYPAL_CLIENT_ID: Tu Client ID de PayPal.
+      - EMAIL_USER: Tu correo de Gmail.
+      - EMAIL_PASS: Tu contraseña de aplicación de Gmail (NO tu contraseña normal).
+
+C. Ejecución Local
+   Para que todo funcione (pagos y correos), necesitas correr dos procesos:
+
+   1. Backend (Servidor):
+      Abre una terminal y ejecuta:
+      > node server.js
+      Debe decir "Server running on port 3000".
+
+   2. Frontend (Interfaz):
+      Abre otra terminal y ejecuta:
+      > npm run dev
+      Abre el link que aparece (usualmente http://localhost:5173).
+
+================================================================================
+3. ESTRUCTURA DEL CÓDIGO
+================================================================================
+
+- /src/components: Aquí están las partes visuales de la página.
+  - Navbar.jsx: Barra de navegación.
+  - Hero.jsx: Sección principal con la foto y título.
+  - Plans.jsx: Muestra los precios ($6, $8, $50).
+  - Subscribe.jsx: Maneja la lógica de los botones de pago (Stripe, PayPal, QR).
+  - Schedule.jsx: Muestra los horarios de clases.
+
+- /api: Lógica del servidor.
+  - stripe.js: Crea la sesión de pago y confirma el éxito.
+  - email.js: Se encarga de enviar el correo con el PDF adjunto.
+
+- server.js: Es el archivo principal que conecta todo el backend.
+
+- /public: Imágenes y archivos estáticos.
+  - material-demo.pdf: Este es el archivo que se envía por correo. Si quieres cambiar el material, reemplaza este archivo manteniendo el nombre o actualiza el código en api/email.js.
+
+================================================================================
+4. PERSONALIZACIÓN
+================================================================================
+
+- Cambiar Precios:
+  - Frontend: Edita `src/components/Plans.jsx` (para lo que se ve) y `src/components/Subscribe.jsx` (lista de planes).
+  - Backend: Edita `api/stripe.js` (objeto PLANS) para asegurar que Stripe cobre el monto correcto.
+
+- Cambiar Horarios:
+  - Edita `src/components/Schedule.jsx`.
+
+- Cambiar Material:
+  - Reemplaza `public/material-demo.pdf` con tu propio PDF.
+
+================================================================================
+5. SOPORTE Y MANTENIMIENTO
+================================================================================
+Si los correos no llegan:
+- Verifica que EMAIL_USER y EMAIL_PASS sean correctos en el archivo .env.
+- Asegúrate de usar una "Contraseña de Aplicación" de Google, no tu contraseña de login normal.
+
+Si los pagos fallan:
+- Verifica las claves de Stripe y PayPal en el archivo .env.
+- Revisa la consola del servidor (donde ejecutaste `node server.js`) para ver errores detallados.

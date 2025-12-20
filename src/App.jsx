@@ -1,11 +1,11 @@
-import Navbar from './components/Navbar.jsx'
-import Hero from './components/Hero.jsx'
-import Schedule from './components/Schedule.jsx'
-import Plans from './components/Plans.jsx'
-import Steps from './components/Steps.jsx'
-import Stats from './components/Stats.jsx'
-import Footer from './components/Footer.jsx'
-import Subscribe from './components/Subscribe.jsx'
+import Navbar from './components/layout/Navbar.jsx'
+import Footer from './components/layout/Footer.jsx'
+import Hero from './components/sections/Hero.jsx'
+import Schedule from './components/sections/Schedule.jsx'
+import Plans from './components/sections/Plans.jsx'
+import Steps from './components/sections/Steps.jsx'
+import Stats from './components/sections/Stats.jsx'
+import Subscribe from './components/sections/Subscribe.jsx'
 
 function App() {
   return (

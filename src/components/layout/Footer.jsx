@@ -1,8 +1,8 @@
-import LogoEETV from "../../public/LogoEETV.svg";
-import IcoFacebook from "../../public/SocialMedia/IcoFacebook.svg?react";
-import IcoInstagram from "../../public/SocialMedia/IcoInstagram.svg?react";
-import IcoTikTok from "../../public/SocialMedia/IcoTiktok.svg?react";
-import IcoYouTube from "../../public/SocialMedia/IcoYoutube.svg?react";
+import LogoEETV from "../../../public/LogoEETV.svg";
+import IcoFacebook from "../../../public/SocialMedia/IcoFacebook.svg?react";
+import IcoInstagram from "../../../public/SocialMedia/IcoInstagram.svg?react";
+import IcoTikTok from "../../../public/SocialMedia/IcoTiktok.svg?react";
+import IcoYouTube from "../../../public/SocialMedia/IcoYoutube.svg?react";
 
 export default function Footer() {
 	return (

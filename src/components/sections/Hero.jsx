@@ -39,7 +39,7 @@ export default function Hero() {
 					</div>
 					<div className="relative">
 						<div className="border-b-8 border-primary ">
-							<img src="/Hero-jessica.png" alt="" />
+							<img src="./Hero-jessica.png" alt="" />
 						</div>
 					</div>
 				</div>

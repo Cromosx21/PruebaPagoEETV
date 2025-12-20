@@ -1,91 +1,86 @@
 # EasyEnglishTV
 
-Landing en React + Vite con pagos para suscripciones, desplegable en Vercel.
+Landing Page para cursos de inglés con React + Vite. Integración de pagos con Stripe y PayPal, y automatización de envío de material por correo.
 
--   UI con TailwindCSS
--   Pago con PayPal (wallet y tarjeta, moneda USD para Plan Único)
--   Pago con Izipay (tarjeta, moneda PEN para Plan Único)
--   Funciones serverless en `api/` para integración de pagos
+## Características
 
-## Estructura
+-   **UI Moderna:** Construida con TailwindCSS.
+-   **Pagos Seguros:**
+    -   **PayPal:** Pagos en USD (Wallet/Tarjeta).
+    -   **Stripe:** Pagos con tarjeta de crédito/débito (USD).
+    -   **QR (Yape/Plin):** Instrucciones para pago manual y envío de voucher por WhatsApp.
+-   **Automatización:** Envío automático de material (PDF) por correo electrónico tras el pago exitoso.
+-   **Backend:** Servidor Express (`server.js`) para manejar secretos de Stripe y envío de correos.
 
--   `src/components/` componentes de UI (Navbar, Hero, Schedule, Plans, Steps, Stats, Subscribe, Footer)
--   Endpoints backend para Izipay: `/api/izipay-create-payment` y `/api/izipay-success` (configúralos en tu servidor o plataforma serverless)
--   `index.html`, `src/index.css`, `tailwind.config.js` configuración base
+## Estructura del Proyecto
 
-## Variables de entorno
+-   `src/components/`: Componentes de UI (Navbar, Hero, Plans, Subscribe, etc.)
+-   `api/`: Lógica del backend (Stripe, Email).
+-   `server.js`: Punto de entrada del servidor backend.
+-   `public/`: Archivos estáticos (imágenes, PDF demo).
 
-Frontend (.env):
+## Configuración y Variables de Entorno
 
--   `VITE_PAYPAL_CLIENT_ID`: Client ID de PayPal (Business)
--   `VITE_YAPE_NUMBER`: número de Yape para pagos por QR
--   `VITE_PLIN_NUMBER`: número de Plin para pagos por QR
--   `VITE_YAPE_QR_URL`: URL de la imagen del código QR de Yape
--   `VITE_PLIN_QR_URL`: URL de la imagen del código QR de Plin
--   `VITE_WHATSAPP_NUMBER`: número de WhatsApp para envío de comprobante
+Crea un archivo `.env` en la raíz basado en `.env.example`:
 
-Backend (.env del servidor):
+```bash
+# Stripe
+VITE_STRIPE_PUBLIC_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
 
--   `IZIPAY_API_BASE`: base de la API REST de Izipay (ej. `https://api.micuentaweb.pe`)
--   `IZIPAY_REST_USER`: usuario REST de Izipay
--   `IZIPAY_REST_PASSWORD`: contraseña REST de Izipay
--   `IZIPAY_PUBLIC_KEY`: clave pública para Krypton (`<usuario>:<clave>`)
--   `IZIPAY_SHA256_KEY`: clave para validar `kr-hash` en `/api/izipay-success`
+# PayPal
+VITE_PAYPAL_CLIENT_ID=...
 
-Ejemplo disponible en `.env.example`.
+# Email (Gmail App Password)
+EMAIL_USER=tu_correo@gmail.com
+EMAIL_PASS=tu_password_app
 
-## Planes y montos
+# QR
+VITE_YAPE_NUMBER=...
+VITE_PLIN_NUMBER=...
+```
 
--   Plan Mensual: solo suscripción vía redes sociales (no muestra medios de pago)
--   Plan Único:
-    -   PayPal: `USD 50.00`
-    -   Izipay: `PEN 185.00`
+## Instalación y Ejecución
 
-## Flujo de Izipay (tarjeta)
+1.  **Instalar dependencias:**
+    ```bash
+    npm install
+    ```
 
-1. En `Subscribe.jsx`, selecciona Plan Único y el método `Izipay`.
-2. El front llama `POST /api/izipay-create-payment` con `{ planId }`.
-3. El backend obtiene `formToken` desde Izipay (KR-Embedded) y responde `{ formToken, publicKey }`.
-4. El front incrusta el formulario oficial Krypton (`kr-pan`, `kr-expiry`, `kr-security-code`, `kr-payment-button`).
-5. Al finalizar, Izipay POSTea a `/api/izipay-success`. Ahí se valida el hash y se renderiza o registra el comprobante con:
-    - Fecha/hora en `es-PE`
-    - Orden y Número de transacción
-    - Marca y últimos 4 dígitos de la tarjeta
-    - Monto y moneda
+2.  **Iniciar el proyecto (Frontend + Backend):**
+    Para desarrollo local, necesitas correr tanto el servidor de Vite como el servidor Express.
 
-## Flujo de PayPal
+    **Terminal 1 (Backend):**
+    ```bash
+    node server.js
+    ```
+    (El servidor correrá en http://localhost:3000)
 
--   El SDK se carga con `VITE_PAYPAL_CLIENT_ID`.
--   Botón estándar (wallet).
--   Montos en `USD` y descripción según plan.
+    **Terminal 2 (Frontend):**
+    ```bash
+    npm run dev
+    ```
+    (El frontend correrá en http://localhost:5173 y hará proxy de `/api` a `localhost:3000`)
 
-## Desarrollo local
+## Flujo de Pagos
 
--   Instalar dependencias: `npm install`
--   Servidor dev: `npm run dev` (http://localhost:5173)
--   Lint: `npm run lint`
--   Build: `npm run build`
--   Con Vercel: `vercel dev` para probar funciones `api/` junto al front
+### Stripe
+1.  El usuario selecciona "Tarjeta (Stripe)" y el plan deseado.
+2.  Se llama a `/api/create-checkout-session` para crear una sesión de pago.
+3.  El usuario es redirigido a la página segura de Stripe.
+4.  Al completar el pago, Stripe redirige a `/?status=success`.
+5.  El frontend detecta el éxito y llama a `/api/confirm-stripe-payment`.
+6.  El backend verifica el pago y envía el material por correo automáticamente.
+
+### PayPal
+1.  El usuario selecciona "PayPal".
+2.  Se renderizan los botones oficiales de PayPal.
+3.  Al aprobar el pago (`onApprove`), el frontend captura la orden.
+4.  Tras la captura exitosa, el frontend llama a `/api/send-material` para enviar el correo con el PDF.
 
 ## Despliegue
 
-1. Configurar variables de entorno en Vercel (Project Settings → Environment Variables).
-2. `Build Command`: `npm run build`
-3. `Output Directory`: `dist`
-4. Desplegar. Las rutas `api/` quedan disponibles como funciones serverless.
+Para producción, se recomienda desplegar el frontend (ej. Vercel, Netlify) y el backend (ej. Vercel Functions, Render, Railway).
 
-## Seguridad
-
--   No guardar secretos en el repositorio; usa variables de entorno.
--   No manejar datos sensibles de tarjeta; Krypton/Izipay procesan en cliente.
--   Validar la firma `kr-hash` en el backend.
-
-## QR (Yape/Plin)
-
--   Configura `VITE_YAPE_NUMBER`, `VITE_PLIN_NUMBER`, `VITE_YAPE_QR_URL`, `VITE_PLIN_QR_URL`.
--   Para recepción de comprobantes por WhatsApp, define `VITE_WHATSAPP_NUMBER` en formato internacional, por ejemplo `+51987654321`.
-
-## Personalización
-
--   Colores y estilos: `tailwind.config.js` y `src/index.css`
--   Contenidos: componentes en `src/components/`
+-   **Vercel:** Si despliegas en Vercel, puedes convertir `server.js` y `api/` en Serverless Functions o usar un adaptador.
+-   **VPS/Node:** Puedes correr `node server.js` y servir el frontend compilado (`npm run build`) desde la carpeta `dist`.
