@@ -7,10 +7,14 @@ const client = new MercadoPagoConfig({
 	accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
 });
 
-export const createPreference = async (req, res) => {
+export default async function handler(req, res) {
+	if (req.method !== "POST") {
+		res.setHeader("Allow", ["POST"]);
+		return res.status(405).end(`Method ${req.method} Not Allowed`);
+	}
+
 	try {
 		const { title, price } = req.body;
-		// Use provided values or fallback to defaults
 		const itemTitle = title || "Producto";
 		const itemPrice = Number(price) || 10;
 
@@ -23,7 +27,7 @@ export const createPreference = async (req, res) => {
 						title: itemTitle,
 						quantity: 1,
 						unit_price: itemPrice,
-						currency_id: "PEN", // Default to PEN for simplicity or dynamic
+						currency_id: "PEN",
 					},
 				],
 				back_urls: {
@@ -35,9 +39,9 @@ export const createPreference = async (req, res) => {
 			},
 		});
 
-		res.json({ id: result.id });
+		res.status(200).json({ id: result.id });
 	} catch (error) {
 		console.error("Error creating Mercado Pago preference:", error);
 		res.status(500).json({ error: error.message });
 	}
-};
+}

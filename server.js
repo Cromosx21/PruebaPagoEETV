@@ -2,8 +2,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { createPreference } from "./api/mercadopago.js";
-import { sendMaterial } from "./api/email.js";
+import createPreferenceHandler from "./api/create-preference.js";
+import sendMaterialHandler from "./api/send-material.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -20,9 +20,11 @@ app.use(express.json());
 // Servir archivos estáticos (para el PDF de demo)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Rutas API
-app.post("/api/create-preference", createPreference);
-app.post("/api/send-material", sendMaterial);
+// Rutas API (Adaptadores para Express usando los handlers de Vercel)
+app.all("/api/create-preference", (req, res) =>
+	createPreferenceHandler(req, res)
+);
+app.all("/api/send-material", (req, res) => sendMaterialHandler(req, res));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
