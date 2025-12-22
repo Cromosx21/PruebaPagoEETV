@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { loadStripe } from "@stripe/stripe-js";
 import { useCurrency } from "../../context/CurrencyContext";
 import IcoFacebook from "../../../public/SocialMedia/IcoFacebook.svg?react";
 import IcoYouTube from "../../../public/SocialMedia/IcoYoutube.svg?react";
+import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 
-const stripePromise = loadStripe(
-	import.meta.env.VITE_STRIPE_PUBLIC_KEY || "pk_test_placeholder"
-);
+// Initialize Mercado Pago with public key
+const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+if (mpPublicKey) {
+	initMercadoPago(mpPublicKey, { locale: "es-PE" });
+}
 
 const PLANS = [
 	{
@@ -34,15 +36,17 @@ const PLANS = [
 		currency: "USD",
 		paypalAmount: "50.00",
 		color: "secondary",
-		allowedMethods: ["paypal", "stripe", "qr"],
+		allowedMethods: ["paypal", "mercadopago", "qr"],
 	},
 ];
 
 export default function Subscribe() {
 	const { formatPrice, currency } = useCurrency();
-	const [selected, setSelected] = useState(PLANS[2]); // Default to Unico (Popular)
+	const [selected, setSelected] = useState(PLANS[2]); // Default to Unico
 	const [status, setStatus] = useState("");
 	const [method, setMethod] = useState(PLANS[2].allowedMethods[0]);
+	const [preferenceId, setPreferenceId] = useState(null);
+	const [email, setEmail] = useState("");
 	const paypalContainerRef = useRef(null);
 	const colorClasses = {
 		primary: "bg-primary",
@@ -64,51 +68,91 @@ export default function Subscribe() {
 	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
 	const plinQr = import.meta.env.VITE_PLIN_QR_URL || "/Yape-qr.jpeg";
 
-	// Actualizar método de pago al cambiar de plan
-	useEffect(() => {
-		if (selected && !selected.allowedMethods.includes(method)) {
-			setMethod(selected.allowedMethods[0]);
+	const handlePlanSelect = (plan) => {
+		setSelected(plan);
+		if (!plan.allowedMethods.includes(method)) {
+			setMethod(plan.allowedMethods[0]);
 		}
-	}, [selected, method]);
+	};
 
-	// Verificar retorno de Stripe
+	// Validate email format
+	const isValidEmail = (email) => {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	};
+
+	// Check for payment status on mount (Return from Mercado Pago)
 	useEffect(() => {
 		const query = new URLSearchParams(window.location.search);
-		if (query.get("status") === "success" && query.get("session_id")) {
-			setStatus("Confirmando pago...");
-			fetch("/api/confirm-stripe-payment", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ session_id: query.get("session_id") }),
-			})
-				.then((res) => res.json())
-				.then((data) => {
-					if (data.status === "confirmed") {
-						setStatus(
-							`¡Pago exitoso! Hemos enviado el material a ${data.email}.`
-						);
-						// Limpiar URL
-						window.history.replaceState(
-							{},
-							document.title,
-							window.location.pathname
-						);
-					} else {
-						setStatus(
-							"Error al confirmar el pago. Contacte a soporte."
-						);
-					}
-				})
-				.catch((err) => {
-					console.error(err);
-					setStatus("Error de conexión al confirmar pago.");
-				});
-		} else if (query.get("status") === "cancel") {
-			setStatus("El pago fue cancelado.");
+		const statusParam = query.get("status");
+		const paymentId = query.get("payment_id");
+
+		if (statusParam === "approved" && paymentId) {
+			const pendingEmail = localStorage.getItem("pending_payment_email");
+			const pendingPlan = localStorage.getItem("pending_payment_plan");
+
+			if (pendingEmail) {
+				// Use setTimeout to avoid synchronous state update warning during effect
+				setTimeout(() => {
+					setStatus("Pago aprobado. Enviando material...");
+					fetch("/api/send-material", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							email: pendingEmail,
+							name: "Estudiante",
+							planName: pendingPlan || "Plan Único",
+						}),
+					})
+						.then((res) => res.json())
+						.then(() => {
+							setStatus(
+								`¡Pago aprobado! Material enviado a ${pendingEmail}.`
+							);
+							localStorage.removeItem("pending_payment_email");
+							localStorage.removeItem("pending_payment_plan");
+							window.history.replaceState(
+								{},
+								document.title,
+								window.location.pathname
+							);
+						})
+						.catch(() => {
+							setStatus(
+								"Pago aprobado, pero hubo un error enviando el correo. Contacta a soporte."
+							);
+						});
+				}, 0);
+			} else {
+				setTimeout(() => setStatus("Pago aprobado exitosamente."), 0);
+			}
+		} else if (statusParam === "failure") {
+			setTimeout(
+				() => setStatus("El pago fue rechazado. Intenta nuevamente."),
+				0
+			);
+		} else if (statusParam === "pending") {
+			setTimeout(
+				() => setStatus("El pago está pendiente de confirmación."),
+				0
+			);
 		}
 	}, []);
 
+	// Initialize PayPal
 	useEffect(() => {
+		if (method !== "paypal") {
+			if (paypalContainerRef.current)
+				paypalContainerRef.current.innerHTML = "";
+			return;
+		}
+
+		// Don't render PayPal if email is invalid (force user to input email first)
+		if (!isValidEmail(email) && selected.id === "unico") {
+			if (paypalContainerRef.current)
+				paypalContainerRef.current.innerHTML = "";
+			return;
+		}
+
 		const rawId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
 		const clientId =
 			String(rawId)
@@ -130,12 +174,6 @@ export default function Subscribe() {
 
 		const renderButtons = async () => {
 			try {
-				if (method !== "paypal") {
-					if (paypalContainerRef.current)
-						paypalContainerRef.current.innerHTML = "";
-					return;
-				}
-
 				await ensureSdk();
 				setStatus("");
 				if (paypalContainerRef.current)
@@ -164,7 +202,7 @@ export default function Subscribe() {
 							const details = await actions.order.capture();
 							setStatus("Procesando envío de material...");
 
-							// Enviar correo tras pago exitoso
+							// Send email
 							fetch("/api/send-material", {
 								method: "POST",
 								headers: { "Content-Type": "application/json" },
@@ -196,33 +234,59 @@ export default function Subscribe() {
 		};
 
 		renderButtons();
-	}, [selected.id, method, selected.paypalAmount, selected.name]);
+	}, [selected.id, method, selected.paypalAmount, selected.name, email]);
 
-	const handleStripePayment = async () => {
-		setStatus("Redirigiendo a Stripe...");
-		try {
-			const stripe = await stripePromise;
-			const response = await fetch("/api/create-checkout-session", {
+	// Create Mercado Pago Preference
+	useEffect(() => {
+		let isMounted = true;
+
+		// Only create preference if method is MP and email is valid
+		if (
+			method === "mercadopago" &&
+			selected &&
+			selected.id === "unico" &&
+			isValidEmail(email)
+		) {
+			// Save email for return flow
+			localStorage.setItem("pending_payment_email", email);
+			localStorage.setItem("pending_payment_plan", selected.name);
+
+			fetch("/api/create-preference", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ planId: selected.id }),
-			});
-			const session = await response.json();
-			if (session.error) {
-				setStatus(session.error);
-				return;
+				body: JSON.stringify({
+					planId: selected.id,
+					title: selected.name,
+					price: selected.amount,
+					email: email, // Pass email to backend if needed
+				}),
+			})
+				.then((res) => res.json())
+				.then((data) => {
+					if (isMounted) {
+						if (data.id) setPreferenceId(data.id);
+						else
+							setStatus(
+								"Error al crear preferencia de Mercado Pago"
+							);
+					}
+				})
+				.catch((err) => {
+					if (isMounted) {
+						console.error(err);
+						setStatus("Error conectando con Mercado Pago");
+					}
+				});
+		} else {
+			// Use functional update or check to avoid loop/warning
+			if (preferenceId !== null) {
+				setTimeout(() => setPreferenceId(null), 0);
 			}
-			const result = await stripe.redirectToCheckout({
-				sessionId: session.id,
-			});
-			if (result.error) {
-				setStatus(result.error.message);
-			}
-		} catch (error) {
-			console.error(error);
-			setStatus("Error al conectar con Stripe");
 		}
-	};
+		return () => {
+			isMounted = false;
+		};
+	}, [method, selected, email, preferenceId]);
 
 	return (
 		<section id="suscribete" className="py-16 bg-slate-50">
@@ -243,7 +307,7 @@ export default function Subscribe() {
 									? "ring-2 ring-primary"
 									: ""
 							}`}
-							onClick={() => setSelected(p)}
+							onClick={() => handlePlanSelect(p)}
 						>
 							<div className="flex items-center justify-between">
 								<div>
@@ -339,17 +403,17 @@ export default function Subscribe() {
 										PayPal
 									</button>
 								)}
-								{selected.allowedMethods.includes("stripe") && (
+								{selected.allowedMethods.includes("mercadopago") && (
 									<button
 										type="button"
-										onClick={() => setMethod("stripe")}
+										onClick={() => setMethod("mercadopago")}
 										className={`px-3 py-2 rounded-lg border ${
-											method === "stripe"
+											method === "mercadopago"
 												? "bg-primary text-white border-primary"
 												: "bg-white text-slate-700"
 										}`}
 									>
-										Tarjeta (Stripe)
+										Mercado Pago
 									</button>
 								)}
 								{selected.allowedMethods.includes("qr") && (
@@ -369,6 +433,31 @@ export default function Subscribe() {
 						</div>
 
 						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2 relative">
+							{/* Email Input for Payment Methods */}
+							{(method === "mercadopago" ||
+								method === "paypal") && (
+								<div className="mb-6">
+									<label className="block text-sm font-medium text-slate-700 mb-1">
+										Correo Electrónico (Para recibir tu
+										material)
+									</label>
+									<input
+										type="email"
+										value={email}
+										onChange={(e) =>
+											setEmail(e.target.value)
+										}
+										placeholder="tu@correo.com"
+										className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+									/>
+									{!isValidEmail(email) && email.length > 0 && (
+										<p className="text-red-500 text-xs mt-1">
+											Ingresa un correo válido
+										</p>
+									)}
+								</div>
+							)}
+
 							{/* PayPal */}
 							{method === "paypal" && (
 								<>
@@ -387,43 +476,52 @@ export default function Subscribe() {
 										className="mt-4"
 										ref={paypalContainerRef}
 									/>
+									{!isValidEmail(email) && (
+										<p className="text-sm text-amber-600 mt-2">
+											Ingresa tu correo arriba para ver el
+											botón de pago.
+										</p>
+									)}
 								</>
 							)}
 
-							{/* Stripe */}
-							{method === "stripe" && (
+							{/* Mercado Pago */}
+							{method === "mercadopago" && (
 								<>
 									<div className="text-lg font-semibold">
-										Pagar con Tarjeta
+										Pagar con Mercado Pago
 									</div>
 									<div className="mt-1 text-sm text-slate-600">
-										Procesado por Stripe (Seguro). Se
-										cobrará en USD.
+										Procesado por Mercado Pago. Se cobrará en
+										PEN/USD según configuración.
 									</div>
 									<div className="mt-4">
-										<button
-											onClick={handleStripePayment}
-											className="w-full rounded-lg bg-indigo-600 text-white px-5 py-3 hover:bg-indigo-700 transition-colors font-medium flex items-center justify-center gap-2"
-										>
-											<svg
-												className="w-5 h-5"
-												fill="none"
-												viewBox="0 0 24 24"
-												stroke="currentColor"
-											>
-												<path
-													strokeLinecap="round"
-													strokeLinejoin="round"
-													strokeWidth={2}
-													d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+										{isValidEmail(email) ? (
+											preferenceId ? (
+												<Wallet
+													initialization={{
+														preferenceId:
+															preferenceId,
+													}}
+													customization={{
+														texts: {
+															valueProp:
+																"smart_option",
+														},
+													}}
 												/>
-											</svg>
-											Pagar{" "}
-											{formatPrice(
-												parseFloat(selected.amount)
-											)}{" "}
-											con Tarjeta
-										</button>
+											) : (
+												<div className="text-sm text-slate-500">
+													Cargando opción de
+													pago...
+												</div>
+											)
+										) : (
+											<p className="text-sm text-amber-600">
+												Ingresa tu correo arriba para
+												continuar.
+											</p>
+										)}
 									</div>
 								</>
 							)}

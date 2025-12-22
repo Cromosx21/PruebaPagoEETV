@@ -1,86 +1,64 @@
 # EasyEnglishTV
 
-Landing Page para cursos de inglés con React + Vite. Integración de pagos con Stripe y PayPal, y automatización de envío de material por correo.
+Landing en React + Vite con pagos integrados para suscripciones, optimizada para despliegue en Vercel. Incluye:
 
-## Características
+-   UI con TailwindCSS
+-   Pago con Mercado Pago (Checkout Pro/Wallet)
+-   Pago con PayPal
+-   Funciones serverless en `api/` (Express)
 
--   **UI Moderna:** Construida con TailwindCSS.
--   **Pagos Seguros:**
-    -   **PayPal:** Pagos en USD (Wallet/Tarjeta).
-    -   **Stripe:** Pagos con tarjeta de crédito/débito (USD).
-    -   **QR (Yape/Plin):** Instrucciones para pago manual y envío de voucher por WhatsApp.
--   **Automatización:** Envío automático de material (PDF) por correo electrónico tras el pago exitoso.
--   **Backend:** Servidor Express (`server.js`) para manejar secretos de Stripe y envío de correos.
+## Estructura
 
-## Estructura del Proyecto
+-   `src/components/sections/` componentes de UI principales
+-   `api/mercadopago.js` creación de preferencias de pago
+-   `server.js` servidor Express para desarrollo local o despliegue
+-   `index.html`, `src/index.css`, `tailwind.config.js` configuración base
 
--   `src/components/`: Componentes de UI (Navbar, Hero, Plans, Subscribe, etc.)
--   `api/`: Lógica del backend (Stripe, Email).
--   `server.js`: Punto de entrada del servidor backend.
--   `public/`: Archivos estáticos (imágenes, PDF demo).
+## Variables de entorno
 
-## Configuración y Variables de Entorno
+Configura estas variables en `.env` (local) o en el panel de Vercel:
 
-Crea un archivo `.env` en la raíz basado en `.env.example`:
+Frontend:
 
-```bash
-# Stripe
-VITE_STRIPE_PUBLIC_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
+-   `VITE_PAYPAL_CLIENT_ID`: client id de PayPal
+-   `VITE_MERCADOPAGO_PUBLIC_KEY`: clave pública de Mercado Pago
 
-# PayPal
-VITE_PAYPAL_CLIENT_ID=...
+Backend:
 
-# Email (Gmail App Password)
-EMAIL_USER=tu_correo@gmail.com
-EMAIL_PASS=tu_password_app
+-   `MERCADOPAGO_ACCESS_TOKEN`: token de acceso de Mercado Pago (Production/Test)
 
-# QR
-VITE_YAPE_NUMBER=...
-VITE_PLIN_NUMBER=...
-```
+Opcionales (QR Manual):
 
-## Instalación y Ejecución
+-   `VITE_YAPE_NUMBER`, `VITE_PLIN_NUMBER`
+-   `VITE_WHATSAPP_NUMBER`
 
-1.  **Instalar dependencias:**
-    ```bash
-    npm install
-    ```
+## Mercado Pago
 
-2.  **Iniciar el proyecto (Frontend + Backend):**
-    Para desarrollo local, necesitas correr tanto el servidor de Vite como el servidor Express.
+-   Se usa el SDK `@mercadopago/sdk-react` en el frontend para renderizar el botón de pago (Wallet).
+-   El backend crea una "Preferencia" de pago y devuelve el ID.
+-   Flujo:
+    1.  Usuario selecciona "Mercado Pago".
+    2.  Front llama a `/api/create-preference`.
+    3.  Backend crea preferencia y retorna `preferenceId`.
+    4.  Front renderiza el botón de pago con ese ID.
 
-    **Terminal 1 (Backend):**
-    ```bash
-    node server.js
-    ```
-    (El servidor correrá en http://localhost:3000)
+## PayPal
 
-    **Terminal 2 (Frontend):**
-    ```bash
-    npm run dev
-    ```
-    (El frontend correrá en http://localhost:5173 y hará proxy de `/api` a `localhost:3000`)
+-   El SDK se carga dinámicamente con `VITE_PAYPAL_CLIENT_ID`.
 
-## Flujo de Pagos
+## Despliegue en Vercel
 
-### Stripe
-1.  El usuario selecciona "Tarjeta (Stripe)" y el plan deseado.
-2.  Se llama a `/api/create-checkout-session` para crear una sesión de pago.
-3.  El usuario es redirigido a la página segura de Stripe.
-4.  Al completar el pago, Stripe redirige a `/?status=success`.
-5.  El frontend detecta el éxito y llama a `/api/confirm-stripe-payment`.
-6.  El backend verifica el pago y envía el material por correo automáticamente.
+1.  Importa el repo en Vercel.
+2.  Añade las variables de entorno.
+3.  `Build Command`: `npm run build`
+4.  `Output Directory`: `dist`
+5.  Configura las Serverless Functions si usas la carpeta `api/` como funciones de Vercel, o despliega `server.js` como un servicio web si prefieres (requiere `vercel.json` específico).
+    -   _Nota_: Este proyecto usa `server.js` con Express. Para Vercel Functions, lo ideal es tener archivos en `api/` que exporten `default (req, res)`.
+    -   Actualmente `api/mercadopago.js` exporta una función, no un handler default. Si despliegas en Vercel como Functions, asegúrate de adaptar la estructura o usar `vercel build`.
 
-### PayPal
-1.  El usuario selecciona "PayPal".
-2.  Se renderizan los botones oficiales de PayPal.
-3.  Al aprobar el pago (`onApprove`), el frontend captura la orden.
-4.  Tras la captura exitosa, el frontend llama a `/api/send-material` para enviar el correo con el PDF.
+## Desarrollo local
 
-## Despliegue
-
-Para producción, se recomienda desplegar el frontend (ej. Vercel, Netlify) y el backend (ej. Vercel Functions, Render, Railway).
-
--   **Vercel:** Si despliegas en Vercel, puedes convertir `server.js` y `api/` en Serverless Functions o usar un adaptador.
--   **VPS/Node:** Puedes correr `node server.js` y servir el frontend compilado (`npm run build`) desde la carpeta `dist`.
+-   Instala dependencias: `npm install`
+-   Dev server (Frontend): `npm run dev`
+-   Servidor API (Backend): `node server.js` (o `npm run server` si configuras el script)
+-   Lint: `npm run lint`

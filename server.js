@@ -1,7 +1,8 @@
+/* global process */
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { createCheckoutSession, confirmStripePayment } from "./api/stripe.js";
+import { createPreference } from "./api/mercadopago.js";
 import { sendMaterial } from "./api/email.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -20,8 +21,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 // Rutas API
-app.post("/api/create-checkout-session", createCheckoutSession);
-app.post("/api/confirm-stripe-payment", confirmStripePayment);
+app.post("/api/create-preference", createPreference);
 app.post("/api/send-material", sendMaterial);
 
 const PORT = process.env.PORT || 3000;

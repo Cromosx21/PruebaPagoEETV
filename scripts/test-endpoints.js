@@ -1,3 +1,4 @@
+/* global process */
 // Script para probar el endpoint de envío de correos
 // Uso: node scripts/test-endpoints.js [email]
 

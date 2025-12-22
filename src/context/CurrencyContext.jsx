@@ -1,42 +1,11 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { RATES, FLAGS } from "../constants/currency";
 
 const CurrencyContext = createContext();
 
-// Tasas de cambio aproximadas (Hardcoded para estabilidad del demo)
-// En producción, esto debería venir de una API en tiempo real.
-const RATES = {
-	USD: 1,
-	PEN: 3.75, // Perú
-	MXN: 17.5, // México
-	COP: 3900, // Colombia
-	CLP: 950, // Chile
-	ARS: 850, // Argentina
-	BOB: 6.9, // Bolivia
-};
-
-const FLAGS = {
-	USD: "US",
-	PEN: "PE",
-	MXN: "MX",
-	COP: "CO",
-	CLP: "CL",
-	ARS: "AR",
-	BOB: "BO",
-};
-
-const SYMBOLS = {
-	USD: "$",
-	PEN: "S/",
-	MXN: "$",
-	COP: "$",
-	CLP: "$",
-	ARS: "$",
-	BOB: "Bs",
-};
-
+/* eslint-disable react-refresh/only-export-components */
 export const CurrencyProvider = ({ children }) => {
 	const [currency, setCurrency] = useState("USD");
-	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		// Intentar detectar país por IP
@@ -57,12 +26,10 @@ export const CurrencyProvider = ({ children }) => {
 				if (countryMap[data.country_code]) {
 					setCurrency(countryMap[data.country_code]);
 				}
-			} catch (error) {
+			} catch {
 				console.warn(
 					"No se pudo detectar el país, usando USD por defecto."
 				);
-			} finally {
-				setLoading(false);
 			}
 		};
 
