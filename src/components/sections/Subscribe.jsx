@@ -1,3 +1,52 @@
+const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+
+export default function Subscribe() {
+	// Initialize Mercado Pago with public key only once inside component
+	useEffect(() => {
+		if (mpPublicKey) {
+			initMercadoPago(mpPublicKey, { locale: "es-PE" });
+		}
+	}, []);
+
+	const { formatPrice, currency } = useCurrency();
+	const [selected, setSelected] = useState(PLANS[2]); // Default to Unico
+	const [status, setStatus] = useState("");
+	const [method, setMethod] = useState(PLANS[2].allowedMethods[0]);
+	const [preferenceId, setPreferenceId] = useState(null);
+	const [email, setEmail] = useState("");
+	const paypalContainerRef = useRef(null);
+	const colorClasses = {
+		primary: "bg-primary",
+		secondary: "bg-secondary",
+		accent: "bg-accent",
+	};
+
+	const yapeNumber = (import.meta.env.VITE_YAPE_NUMBER || "932914462")
+		.toString()
+		.trim();
+	const plinNumber = (import.meta.env.VITE_PLIN_NUMBER || "932914462")
+		.toString()
+		.trim();
+	const whatsappNumber = (
+		import.meta.env.VITE_WHATSAPP_NUMBER || "+51932914462"
+	)
+		.toString()
+		.trim();
+	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
+	const plinQr = import.meta.env.VITE_PLIN_QR_URL || "/Yape-qr.jpeg";
+
+	const handlePlanSelect = (plan) => {
+		setSelected(plan);
+		if (!plan.allowedMethods.includes(method)) {
+			setMethod(plan.allowedMethods[0]);
+		}
+	};
+
+	// Validate email format
+	const isValidEmail = (email) => {
+		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+	};
+
 	// Create Mercado Pago Preference
 	useEffect(() => {
 		let isMounted = true;
@@ -62,3 +111,4 @@
 		};
 		// Removed preferenceId from dependencies to avoid infinite loop/re-renders
 	}, [method, selected, email]);
+}
