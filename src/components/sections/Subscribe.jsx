@@ -153,6 +153,10 @@ export default function Subscribe() {
 		if (!isValidEmail(email) && selected.id === "unico") {
 			if (paypalContainerRef.current)
 				paypalContainerRef.current.innerHTML = "";
+			// We continue to allow execution to clear, but we want to re-render if valid
+			// However, if we return here, we won't render buttons.
+			// To show "disabled" buttons, we handle it in JSX.
+			// This effect only handles the "Real" buttons injection.
 			return;
 		}
 
@@ -496,14 +500,22 @@ export default function Subscribe() {
 										{currency !== "USD" &&
 											`(aprox. $${selected.amount} USD)`}
 									</div>
-									<div
-										className="mt-4"
-										ref={paypalContainerRef}
-									/>
+									<div className="mt-4">
+										{!isValidEmail(email) ? (
+											<button
+												disabled
+												className="w-full py-3 rounded-full bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
+											>
+												Pagar con PayPal
+											</button>
+										) : (
+											<div ref={paypalContainerRef} />
+										)}
+									</div>
 									{!isValidEmail(email) && (
 										<p className="text-sm text-amber-600 mt-2">
-											Ingresa tu correo arriba para ver el
-											botón de pago.
+											Ingresa tu correo arriba para
+											activar el botón.
 										</p>
 									)}
 								</>
@@ -520,31 +532,32 @@ export default function Subscribe() {
 										en PEN/USD según configuración.
 									</div>
 									<div className="mt-4">
-										{isValidEmail(email) ? (
-											preferenceId ? (
-												<Wallet
-													key={preferenceId}
-													initialization={{
-														preferenceId:
-															preferenceId,
-														redirectMode: "modal",
-													}}
-													customization={{
-														texts: {
-															valueProp:
-																"smart_option",
-														},
-													}}
-												/>
-											) : (
-												<div className="text-sm text-slate-500">
-													Cargando opción de pago...
-												</div>
-											)
+										{isValidEmail(email) && preferenceId ? (
+											<Wallet
+												key={preferenceId}
+												initialization={{
+													preferenceId: preferenceId,
+													redirectMode: "modal",
+												}}
+												customization={{
+													texts: {
+														valueProp:
+															"smart_option",
+													},
+												}}
+											/>
 										) : (
-											<p className="text-sm text-amber-600">
+											<button
+												disabled
+												className="w-full py-3 rounded-lg bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
+											>
+												Pagar con Mercado Pago
+											</button>
+										)}
+										{!isValidEmail(email) && (
+											<p className="text-sm text-amber-600 mt-2">
 												Ingresa tu correo arriba para
-												continuar.
+												activar el botón.
 											</p>
 										)}
 									</div>
