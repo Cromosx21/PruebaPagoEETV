@@ -57,19 +57,12 @@ export default function Subscribe() {
 		accent: "bg-accent",
 	};
 
-	const yapeNumber = (import.meta.env.VITE_YAPE_NUMBER || "932914462")
-		.toString()
-		.trim();
-	const plinNumber = (import.meta.env.VITE_PLIN_NUMBER || "932914462")
-		.toString()
-		.trim();
 	const whatsappNumber = (
-		import.meta.env.VITE_WHATSAPP_NUMBER || "+51932914462"
+		import.meta.env.VITE_WHATSAPP_NUMBER
 	)
 		.toString()
 		.trim();
 	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
-	const plinQr = import.meta.env.VITE_PLIN_QR_URL || "/Yape-qr.jpeg";
 
 	const handlePlanSelect = (plan) => {
 		setSelected(plan);
