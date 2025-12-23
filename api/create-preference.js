@@ -14,9 +14,10 @@ export default async function handler(req, res) {
 	}
 
 	try {
-		const { title, price } = req.body;
+		const { title, price, currency_id } = req.body;
 		const itemTitle = title || "Producto";
 		const itemPrice = Number(price) || 10;
+		const itemCurrency = currency_id || "PEN";
 
 		const preference = new Preference(client);
 
@@ -27,7 +28,7 @@ export default async function handler(req, res) {
 						title: itemTitle,
 						quantity: 1,
 						unit_price: itemPrice,
-						currency_id: "PEN",
+						currency_id: itemCurrency,
 					},
 				],
 				back_urls: {

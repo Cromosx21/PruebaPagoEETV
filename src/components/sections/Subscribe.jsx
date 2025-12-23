@@ -44,7 +44,7 @@ export default function Subscribe() {
 		}
 	}, []);
 
-	const { formatPrice, currency } = useCurrency();
+	const { formatPrice, currency, rates } = useCurrency();
 	const [selected, setSelected] = useState(PLANS[2]); // Default to Unico
 	const [status, setStatus] = useState("");
 	const [method, setMethod] = useState(PLANS[2].allowedMethods[0]);
@@ -257,13 +257,26 @@ export default function Subscribe() {
 				localStorage.setItem("pending_payment_email", email);
 				localStorage.setItem("pending_payment_plan", selected.name);
 
+				// Calculate converted price
+				let finalPrice = parseFloat(selected.amount);
+				let finalCurrency = "USD";
+
+				if (currency === "PEN") {
+					// Use rate from context
+					const rate = rates["PEN"] || 3.75;
+					finalPrice = finalPrice * rate;
+					finalCurrency = "PEN";
+				}
+				// Default to USD for other currencies or if context unavailable
+
 				fetch("/api/create-preference", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						planId: selected.id,
 						title: selected.name,
-						price: selected.amount,
+						price: finalPrice,
+						currency_id: finalCurrency,
 						email: email, // Pass email to backend if needed
 					}),
 				})
@@ -294,7 +307,7 @@ export default function Subscribe() {
 			if (timeoutId) clearTimeout(timeoutId);
 		};
 		// Removed preferenceId from dependencies to avoid infinite loop/re-renders
-	}, [method, selected, email]);
+	}, [method, selected, email, currency, rates]);
 
 	return (
 		<section id="suscribete" className="py-16 bg-slate-50">
@@ -514,6 +527,7 @@ export default function Subscribe() {
 													initialization={{
 														preferenceId:
 															preferenceId,
+														redirectMode: "modal",
 													}}
 													customization={{
 														texts: {
