@@ -572,9 +572,6 @@ export default function Subscribe() {
 									</div>
 									<div className="mt-4 grid md:grid-cols-2 gap-4">
 										<div className="rounded-lg border p-4">
-											<div className="font-medium">
-												Yape
-											</div>
 											<div className="mt-2">
 												<img
 													src={yapeQr}
@@ -585,26 +582,6 @@ export default function Subscribe() {
 											<div className="mt-2 text-sm text-slate-700">
 												Nombre: Jessica Milagros Zena
 												Torres
-												<br />
-												Número: {yapeNumber}
-											</div>
-										</div>
-										<div className="rounded-lg border p-4">
-											<div className="font-medium">
-												Plin
-											</div>
-											<div className="mt-2">
-												<img
-													src={plinQr}
-													alt="QR Plin"
-													className="w-full rounded"
-												/>
-											</div>
-											<div className="mt-2 text-sm text-slate-700">
-												Nombre: Jessica Milagros Zena
-												Torres
-												<br />
-												Número: {plinNumber}
 											</div>
 										</div>
 									</div>
