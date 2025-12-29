@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCurrency } from "../../context/CurrencyContext";
-import IcoFacebook from "../../../public/SocialMedia/IcoFacebook.svg?react";
-import IcoYouTube from "../../../public/SocialMedia/IcoYoutube.svg?react";
+import IcoFacebook from "../../assets/SocialMedia/IcoFacebook.svg?react";
+import IcoYouTube from "../../assets/SocialMedia/IcoYoutube.svg?react";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 
 const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
@@ -28,9 +28,9 @@ const PLANS = [
 	{
 		id: "unico",
 		name: "Plan Único",
-		amount: "50.00",
+		amount: "10.00",
 		currency: "USD",
-		paypalAmount: "50.00",
+		paypalAmount: "10.00",
 		color: "secondary",
 		allowedMethods: ["paypal", "mercadopago", "qr"],
 	},
@@ -57,9 +57,7 @@ export default function Subscribe() {
 		accent: "bg-accent",
 	};
 
-	const whatsappNumber = (
-		import.meta.env.VITE_WHATSAPP_NUMBER
-	)
+	const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || "")
 		.toString()
 		.trim();
 	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
