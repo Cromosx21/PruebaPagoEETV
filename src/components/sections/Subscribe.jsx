@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useCurrency } from "../../context/CurrencyContext";
 import IcoFacebook from "../../assets/SocialMedia/IcoFacebook.svg?react";
 import IcoYouTube from "../../assets/SocialMedia/IcoYoutube.svg?react";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
@@ -28,16 +29,20 @@ const PLANS = [
 	{
 		id: "unico",
 		name: "Plan Único",
-		amount: "10.00",
+		amount: "5.00",
 		currency: "USD",
-		paypalAmount: "10.00",
+		paypalAmount: "5.00",
 		color: "secondary",
 		allowedMethods: ["paypal", "mercadopago", "qr"],
 	},
 ];
 
+/**
+ * Componente principal de suscripción.
+ * Maneja la selección de planes y los métodos de pago (PayPal, MercadoPago, QR).
+ */
 export default function Subscribe() {
-	// Initialize Mercado Pago with public key only once inside component
+	// Inicializar Mercado Pago
 	useEffect(() => {
 		if (mpPublicKey) {
 			initMercadoPago(mpPublicKey, { locale: "es-PE" });
@@ -45,12 +50,12 @@ export default function Subscribe() {
 	}, []);
 
 	const { formatPrice, currency, rates } = useCurrency();
-	const [selected, setSelected] = useState(PLANS[2]); // Default to Unico
+	const [selected, setSelected] = useState(PLANS[2]);
 	const [status, setStatus] = useState("");
 	const [method, setMethod] = useState(PLANS[2].allowedMethods[0]);
 	const [preferenceId, setPreferenceId] = useState(null);
 	const [email, setEmail] = useState("");
-	const paypalContainerRef = useRef(null);
+
 	const colorClasses = {
 		primary: "bg-primary",
 		secondary: "bg-secondary",
@@ -62,6 +67,10 @@ export default function Subscribe() {
 		.trim();
 	const yapeQr = import.meta.env.VITE_YAPE_QR_URL || "/Yape-qr.jpeg";
 
+	// Obtener ID de Cliente de PayPal (Sandbox o Live)
+	// NOTA: Para cuenta personal, usar el Client ID generado en developer.paypal.com con dicha cuenta.
+	const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
+
 	const handlePlanSelect = (plan) => {
 		setSelected(plan);
 		if (!plan.allowedMethods.includes(method)) {
@@ -69,12 +78,11 @@ export default function Subscribe() {
 		}
 	};
 
-	// Validate email format
 	const isValidEmail = (email) => {
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 	};
 
-	// Check for payment status on mount (Return from Mercado Pago)
+	// Manejo del retorno de Mercado Pago
 	useEffect(() => {
 		const query = new URLSearchParams(window.location.search);
 		const statusParam = query.get("status");
@@ -85,7 +93,6 @@ export default function Subscribe() {
 			const pendingPlan = localStorage.getItem("pending_payment_plan");
 
 			if (pendingEmail) {
-				// Use setTimeout to avoid synchronous state update warning during effect
 				setTimeout(() => {
 					setStatus("Pago aprobado. Enviando material...");
 					fetch("/api/send-material", {
@@ -100,19 +107,19 @@ export default function Subscribe() {
 						.then((res) => res.json())
 						.then(() => {
 							setStatus(
-								`¡Pago aprobado! Material enviado a ${pendingEmail}.`
+								`¡Pago aprobado! Material enviado a ${pendingEmail}.`,
 							);
 							localStorage.removeItem("pending_payment_email");
 							localStorage.removeItem("pending_payment_plan");
 							window.history.replaceState(
 								{},
 								document.title,
-								window.location.pathname
+								window.location.pathname,
 							);
 						})
 						.catch(() => {
 							setStatus(
-								"Pago aprobado, pero hubo un error enviando el correo. Contacta a soporte."
+								"Pago aprobado, pero hubo un error enviando el correo. Contacta a soporte.",
 							);
 						});
 				}, 0);
@@ -122,147 +129,39 @@ export default function Subscribe() {
 		} else if (statusParam === "failure") {
 			setTimeout(
 				() => setStatus("El pago fue rechazado. Intenta nuevamente."),
-				0
+				0,
 			);
 		} else if (statusParam === "pending") {
 			setTimeout(
 				() => setStatus("El pago está pendiente de confirmación."),
-				0
+				0,
 			);
 		}
 	}, []);
 
-	// Initialize PayPal
-	useEffect(() => {
-		if (method !== "paypal") {
-			if (paypalContainerRef.current)
-				paypalContainerRef.current.innerHTML = "";
-			return;
-		}
-
-		// Don't render PayPal if email is invalid (force user to input email first)
-		if (!isValidEmail(email) && selected.id === "unico") {
-			if (paypalContainerRef.current)
-				paypalContainerRef.current.innerHTML = "";
-			// We continue to allow execution to clear, but we want to re-render if valid
-			// However, if we return here, we won't render buttons.
-			// To show "disabled" buttons, we handle it in JSX.
-			// This effect only handles the "Real" buttons injection.
-			return;
-		}
-
-		const rawId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
-		const clientId =
-			String(rawId)
-				.replace(/^"+|"+$/g, "")
-				.trim() || "sb";
-		const url = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=USD&components=buttons`;
-
-		const ensureSdk = () =>
-			new Promise((resolve, reject) => {
-				if (window.paypal) return resolve();
-				const script = document.createElement("script");
-				script.src = url;
-				script.async = true;
-				script.onload = () => resolve();
-				script.onerror = () =>
-					reject(new Error("No se pudo cargar PayPal SDK"));
-				document.body.appendChild(script);
-			});
-
-		const renderButtons = async () => {
-			try {
-				await ensureSdk();
-				setStatus("");
-				if (paypalContainerRef.current)
-					paypalContainerRef.current.innerHTML = "";
-
-				window.paypal
-					.Buttons({
-						style: {
-							layout: "horizontal",
-							shape: "pill",
-							color: "gold",
-						},
-						createOrder: (_, actions) =>
-							actions.order.create({
-								purchase_units: [
-									{
-										amount: {
-											value: selected.paypalAmount,
-											currency_code: "USD",
-										},
-										description: selected.name,
-									},
-								],
-							}),
-						onApprove: async (_, actions) => {
-							const details = await actions.order.capture();
-							setStatus("Procesando envío de material...");
-
-							// Send email
-							fetch("/api/send-material", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify({
-									email: details.payer.email_address,
-									name: details.payer.name.given_name,
-									planName: selected.name,
-								}),
-							})
-								.then((res) => res.json())
-								.then(() => {
-									setStatus(
-										`¡Pago aprobado! Material enviado a ${details.payer.email_address}.`
-									);
-								})
-								.catch(() => {
-									setStatus(
-										`Pago aprobado, pero hubo un error enviando el correo. ID: ${details.id}`
-									);
-								});
-						},
-						onError: () =>
-							setStatus("Error procesando el pago con PayPal"),
-					})
-					.render(paypalContainerRef.current);
-			} catch {
-				setStatus("No se pudo inicializar PayPal");
-			}
-		};
-
-		renderButtons();
-	}, [selected.id, method, selected.paypalAmount, selected.name, email]);
-
-	// Create Mercado Pago Preference
+	// Generar Preferencia de Mercado Pago
 	useEffect(() => {
 		let isMounted = true;
 		let timeoutId;
 
-		// Only create preference if method is MP and email is valid
 		if (
 			method === "mercadopago" &&
 			selected &&
 			selected.id === "unico" &&
 			isValidEmail(email)
 		) {
-			// Debounce to prevent multiple calls while typing
 			timeoutId = setTimeout(() => {
-				// Save email for return flow
 				localStorage.setItem("pending_payment_email", email);
 				localStorage.setItem("pending_payment_plan", selected.name);
 
-				// Calculate converted price
 				let finalPrice = parseFloat(selected.amount);
 				let finalCurrency = "USD";
 
 				if (currency === "PEN") {
-					// Use rate from context
 					const rate = rates["PEN"] || 3.75;
 					finalPrice = finalPrice * rate;
 					finalCurrency = "PEN";
 				}
-				// Default to USD for other currencies or if context unavailable
 
 				fetch("/api/create-preference", {
 					method: "POST",
@@ -272,7 +171,7 @@ export default function Subscribe() {
 						title: selected.name,
 						price: finalPrice,
 						currency_id: finalCurrency,
-						email: email, // Pass email to backend if needed
+						email: email,
 					}),
 				})
 					.then((res) => res.json())
@@ -281,7 +180,7 @@ export default function Subscribe() {
 							if (data.id) setPreferenceId(data.id);
 							else
 								setStatus(
-									"Error al crear preferencia de Mercado Pago"
+									"Error al crear preferencia de Mercado Pago",
 								);
 						}
 					})
@@ -291,9 +190,8 @@ export default function Subscribe() {
 							setStatus("Error conectando con Mercado Pago");
 						}
 					});
-			}, 800); // 800ms debounce
+			}, 800);
 		} else {
-			// Clear preference if conditions are not met
 			setPreferenceId((prev) => (prev ? null : prev));
 		}
 
@@ -301,7 +199,6 @@ export default function Subscribe() {
 			isMounted = false;
 			if (timeoutId) clearTimeout(timeoutId);
 		};
-		// Removed preferenceId from dependencies to avoid infinite loop/re-renders
 	}, [method, selected, email, currency, rates]);
 
 	return (
@@ -420,7 +317,7 @@ export default function Subscribe() {
 									</button>
 								)}
 								{selected.allowedMethods.includes(
-									"mercadopago"
+									"mercadopago",
 								) && (
 									<button
 										type="button"
@@ -486,7 +383,7 @@ export default function Subscribe() {
 									<div className="mt-1 text-sm text-slate-600">
 										Monto:{" "}
 										{formatPrice(
-											parseFloat(selected.amount)
+											parseFloat(selected.amount),
 										)}{" "}
 										{currency !== "USD" &&
 											`(aprox. $${selected.amount} USD)`}
@@ -500,8 +397,107 @@ export default function Subscribe() {
 												Pagar con PayPal
 											</button>
 										) : (
-											<div ref={paypalContainerRef} />
+											<PayPalScriptProvider
+												options={{
+													"client-id": paypalClientId,
+													currency: "USD",
+												}}
+											>
+												<PayPalButtons
+													style={{
+														layout: "horizontal",
+														shape: "pill",
+														color: "gold",
+													}}
+													createOrder={(
+														_,
+														actions,
+													) => {
+														return actions.order.create(
+															{
+																purchase_units:
+																	[
+																		{
+																			amount: {
+																				value: selected.paypalAmount,
+																				currency_code:
+																					"USD",
+																			},
+																			description:
+																				selected.name,
+																		},
+																	],
+															},
+														);
+													}}
+													onApprove={async (
+														_,
+														actions,
+													) => {
+														const details =
+															await actions.order.capture();
+														setStatus(
+															"Procesando envío de material...",
+														);
+
+														// Enviar correo
+														fetch(
+															"/api/send-material",
+															{
+																method: "POST",
+																headers: {
+																	"Content-Type":
+																		"application/json",
+																},
+																body: JSON.stringify(
+																	{
+																		email: details
+																			.payer
+																			.email_address,
+																		name: details
+																			.payer
+																			.name
+																			.given_name,
+																		planName:
+																			selected.name,
+																	},
+																),
+															},
+														)
+															.then((res) =>
+																res.json(),
+															)
+															.then(() => {
+																setStatus(
+																	`¡Pago aprobado! Material enviado a ${details.payer.email_address}.`,
+																);
+															})
+															.catch(() => {
+																setStatus(
+																	`Pago aprobado, pero hubo un error enviando el correo. ID: ${details.id}`,
+																);
+															});
+													}}
+													onError={() =>
+														setStatus(
+															"Error procesando el pago con PayPal",
+														)
+													}
+												/>
+											</PayPalScriptProvider>
 										)}
+
+										{/* Advertencia solo si estamos en Sandbox explícitamente */}
+										{isValidEmail(email) &&
+											paypalClientId === "sb" && (
+												<div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+													<strong>
+														Modo de Prueba:
+													</strong>{" "}
+													Usa una cuenta Sandbox de
+													PayPal para probar.
+												</div>
+											)}
 									</div>
 									{!isValidEmail(email) && (
 										<p className="text-sm text-amber-600 mt-2">
@@ -581,14 +577,14 @@ export default function Subscribe() {
 										className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 w-full hover:bg-green-700 transition-colors"
 										onClick={() => {
 											const msg = encodeURIComponent(
-												`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`
+												`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`,
 											);
 											window.open(
 												`https://wa.me/${whatsappNumber.replace(
 													/[^+\d]/g,
-													""
+													"",
 												)}?text=${msg}`,
-												"_blank"
+												"_blank",
 											);
 										}}
 									>
