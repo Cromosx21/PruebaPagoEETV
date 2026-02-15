@@ -106,10 +106,12 @@ export default function Plans() {
 						</ul>
 
 						<a
-							href="#suscribete"
+							href="https://www.facebook.com/EasyEnglishTv.1"
+							target="_blank"
+							rel="noreferrer"
 							className="w-full block text-center rounded-lg border-2 border-primary text-primary px-5 py-3 hover:bg-primary/5 transition-all duration-200 font-medium"
 						>
-							Suscribirme
+							Suscribirme en Facebook
 						</a>
 					</div>
 
@@ -170,18 +172,26 @@ export default function Plans() {
 								</span>
 							</li>
 							<li className="flex gap-3">
-								<CrossIcon />
-								<span className="text-sm text-slate-400">
+								<CheckIcon colorClass="text-accent" />
+								<span className="text-sm text-slate-700">
 									Guías y recursos descargables
+								</span>
+							</li>
+							<li className="flex gap-3">
+								<CrossIcon/>
+								<span className="text-sm text-slate-400">
+									Acceso ilimitado de por vida
 								</span>
 							</li>
 						</ul>
 
 						<a
-							href="#suscribete"
+							href="https://www.youtube.com/channel/UCzxP2uldBPoaOdS-vhuGYzg/join"
+							target="_blank"
+							rel="noreferrer"
 							className="w-full block text-center rounded-lg border-2 border-accent text-accent px-5 py-3 hover:border-accent hover:text-accent hover:bg-accent/5 transition-all duration-200 font-medium"
 						>
-							Obtener Plan ORO
+							Obtener Plan ORO en YouTube
 						</a>
 					</div>
 

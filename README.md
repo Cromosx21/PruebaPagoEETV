@@ -1,64 +1,75 @@
 # EasyEnglishTV
 
-Landing en React + Vite con pagos integrados para suscripciones, optimizada para despliegue en Vercel. Incluye:
+Landing en React + Vite para suscripciones con pagos (Mercado Pago y PayPal), optimizada para despliegue en Vercel con enfoque en rendimiento, accesibilidad y SEO.
 
--   UI con TailwindCSS
--   Pago con Mercado Pago (Checkout Pro/Wallet)
--   Pago con PayPal
--   Funciones serverless en `api/` (Express)
+## Tecnologías
+
+- React 19 (Vite)
+- TailwindCSS
+- Express (API local / serverless)
+- SDKs: `@mercadopago/sdk-react`, `@paypal/react-paypal-js`
 
 ## Estructura
 
--   `src/components/sections/` componentes de UI principales
--   `api/mercadopago.js` creación de preferencias de pago
--   `server.js` servidor Express para desarrollo local o despliegue
--   `index.html`, `src/index.css`, `tailwind.config.js` configuración base
+- `src/components/sections/`: componentes de UI principales
+- `src/components/layout/`: cabecera y pie de página
+- `api/`: endpoints para crear preferencias y envío de material
+- `public/`: imágenes, íconos, `robots.txt`, `sitemap.xml`
+- `tailwind.config.js`: paleta y utilidades
+- `index.html`: SEO y performance base
 
 ## Variables de entorno
 
-Configura estas variables en `.env` (local) o en el panel de Vercel:
+Configura estas variables en `.env` (local) o en Vercel:
 
 Frontend:
 
--   `VITE_PAYPAL_CLIENT_ID`: client id de PayPal
--   `VITE_MERCADOPAGO_PUBLIC_KEY`: clave pública de Mercado Pago
+- `VITE_PAYPAL_CLIENT_ID`: Client ID de PayPal (Live o Sandbox)
+- `VITE_MERCADOPAGO_PUBLIC_KEY`: Public Key de Mercado Pago
+- `VITE_YAPE_QR_URL`: Ruta pública del QR (ej. `/Yape-qr.jpeg`)
+- `VITE_WHATSAPP_NUMBER`: Número para WhatsApp (ej. `51912345678`)
+- `VITE_PLIN_NUMBER`: (opcional) Número de Plin
 
 Backend:
 
--   `MERCADOPAGO_ACCESS_TOKEN`: token de acceso de Mercado Pago (Production/Test)
+- `MERCADOPAGO_ACCESS_TOKEN`: Access Token (Test/Production) para crear preferencias
 
-Opcionales (QR Manual):
+## Pagos
 
--   `VITE_YAPE_NUMBER`, `VITE_PLIN_NUMBER`
--   `VITE_WHATSAPP_NUMBER`
+### PayPal
 
-## Mercado Pago
+- Integrado con `@paypal/react-paypal-js`.
+- Usa `VITE_PAYPAL_CLIENT_ID` en producción (Live). En pruebas, usa `sb`.
 
--   Se usa el SDK `@mercadopago/sdk-react` en el frontend para renderizar el botón de pago (Wallet).
--   El backend crea una "Preferencia" de pago y devuelve el ID.
--   Flujo:
-    1.  Usuario selecciona "Mercado Pago".
-    2.  Front llama a `/api/create-preference`.
-    3.  Backend crea preferencia y retorna `preferenceId`.
-    4.  Front renderiza el botón de pago con ese ID.
+### Mercado Pago
 
-## PayPal
+- Frontend renderiza el botón Wallet con `@mercadopago/sdk-react`.
+- Backend crea la preferencia en `/api/create-preference`.
 
--   El SDK se carga dinámicamente con `VITE_PAYPAL_CLIENT_ID`.
+## SEO y Performance
+
+- Meta tags y Open Graph configurados en [index.html](file:///f:/proyectos/pruebaeetv/easyenglishtv/index.html).
+- `robots.txt` y `sitemap.xml` en [public](file:///f:/proyectos/pruebaeetv/easyenglishtv/public).
+- Preconnect a fuentes y preload de imagen crítica.
+- Paleta Tailwind ajustada a azul/rojo coherente con el logo: ver [tailwind.config.js](file:///f:/proyectos/pruebaeetv/easyenglishtv/tailwind.config.js).
 
 ## Despliegue en Vercel
 
-1.  Importa el repo en Vercel.
-2.  Añade las variables de entorno.
-3.  `Build Command`: `npm run build`
-4.  `Output Directory`: `dist`
-5.  Configura las Serverless Functions si usas la carpeta `api/` como funciones de Vercel, o despliega `server.js` como un servicio web si prefieres (requiere `vercel.json` específico).
-    -   _Nota_: Este proyecto usa `server.js` con Express. Para Vercel Functions, lo ideal es tener archivos en `api/` que exporten `default (req, res)`.
-    -   Actualmente `api/mercadopago.js` exporta una función, no un handler default. Si despliegas en Vercel como Functions, asegúrate de adaptar la estructura o usar `vercel build`.
+1. Importa el repo.
+2. Añade variables de entorno.
+3. Build: `npm run build`
+4. Output: `dist`
 
 ## Desarrollo local
 
--   Instala dependencias: `npm install`
--   Dev server (Frontend): `npm run dev`
--   Servidor API (Backend): `node server.js` (o `npm run server` si configuras el script)
--   Lint: `npm run lint`
+- Instalar: `npm install`
+- Frontend: `npm run dev`
+- Backend: `node server.js` (si usas Express local)
+- Lint: `npm run lint`
+
+## Buenas prácticas aplicadas
+
+- Botones principales en azul (armonía con logo), secundarios en rojo.
+- Accesibilidad: `alt` en imágenes, `aria-label` en enlaces de iconos.
+- SEO: canonical, Open Graph, Twitter Card, favicon y apple-touch-icon.
+- Rendimiento: preconnect/preload, tamaños de imagen definidos para evitar CLS.

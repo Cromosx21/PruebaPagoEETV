@@ -6,14 +6,11 @@ const CurrencyContext = createContext();
 /* eslint-disable react-refresh/only-export-components */
 export const CurrencyProvider = ({ children }) => {
 	const [currency, setCurrency] = useState("USD");
+	const [isWorldCurrency, setIsWorldCurrency] = useState(false);
 
 	useEffect(() => {
-		// Intentar detectar país por IP
-		const detectCountry = async () => {
+		const detectCountry = () => {
 			try {
-				const res = await fetch("https://ipapi.co/json/");
-				const data = await res.json();
-
 				const countryMap = {
 					PE: "PEN",
 					MX: "MXN",
@@ -21,15 +18,63 @@ export const CurrencyProvider = ({ children }) => {
 					CL: "CLP",
 					AR: "ARS",
 					BO: "BOB",
+					US: "USD",
 				};
 
-				if (countryMap[data.country_code]) {
-					setCurrency(countryMap[data.country_code]);
+				// Intentar primero por zona horaria
+				try {
+					const timeZoneCurrencyMap = {
+						"America/Lima": "PEN",
+						"America/Bogota": "COP",
+						"America/Mexico_City": "MXN",
+						"America/La_Paz": "BOB",
+						"America/Santiago": "CLP",
+						"America/Argentina/Buenos_Aires": "ARS",
+						"America/New_York": "USD",
+						"America/Chicago": "USD",
+						"America/Los_Angeles": "USD",
+					};
+
+					const tz =
+						typeof Intl !== "undefined" &&
+						Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+					if (tz && timeZoneCurrencyMap[tz]) {
+						setCurrency(timeZoneCurrencyMap[tz]);
+						setIsWorldCurrency(false);
+						return;
+					}
+				} catch {
+					// Ignorar fallos de Intl/timezone y seguir con locale
+				}
+
+				if (typeof navigator !== "undefined") {
+					const locale =
+						navigator.language ||
+						(navigator.languages && navigator.languages[0]);
+
+					if (!locale || !locale.includes("-")) {
+						setCurrency("USD");
+						setIsWorldCurrency(true);
+						return;
+					}
+
+					const countryCode = locale.split("-")[1].toUpperCase();
+
+					if (countryMap[countryCode]) {
+						setCurrency(countryMap[countryCode]);
+						setIsWorldCurrency(false);
+					} else {
+						setCurrency("USD");
+						setIsWorldCurrency(true);
+					}
 				}
 			} catch {
 				console.warn(
-					"No se pudo detectar el país, usando USD por defecto."
+					"No se pudo detectar el país, usando USD por defecto.",
 				);
+				setCurrency("USD");
+				setIsWorldCurrency(true);
 			}
 		};
 
@@ -50,11 +95,16 @@ export const CurrencyProvider = ({ children }) => {
 
 	const value = {
 		currency,
-		setCurrency,
+		setCurrency: (curr) => {
+			setCurrency(curr);
+			// Cambio manual: desactivar modo "moneda mundial"
+			setIsWorldCurrency(false);
+		},
 		formatPrice,
 		currencies: Object.keys(RATES),
 		flags: FLAGS,
 		rates: RATES,
+		isWorldCurrency,
 	};
 
 	return (

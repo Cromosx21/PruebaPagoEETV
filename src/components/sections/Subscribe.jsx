@@ -29,9 +29,9 @@ const PLANS = [
 	{
 		id: "unico",
 		name: "Plan Único",
-		amount: "5.00",
+		amount: "50.00",
 		currency: "USD",
-		paypalAmount: "5.00",
+		paypalAmount: "50.00",
 		color: "secondary",
 		allowedMethods: ["paypal", "mercadopago", "qr"],
 	},
@@ -192,7 +192,11 @@ export default function Subscribe() {
 					});
 			}, 800);
 		} else {
-			setPreferenceId((prev) => (prev ? null : prev));
+			if (preferenceId) {
+				timeoutId = setTimeout(() => {
+					setPreferenceId(null);
+				}, 0);
+			}
 		}
 
 		return () => {
@@ -202,7 +206,7 @@ export default function Subscribe() {
 	}, [method, selected, email, currency, rates]);
 
 	return (
-		<section id="suscribete" className="py-16 bg-slate-50">
+		<section id="subscribe" className="py-16 bg-slate-50">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="text-center">
 					<h2 className="text-3xl font-bold">Suscríbete</h2>
@@ -217,7 +221,7 @@ export default function Subscribe() {
 							key={p.id}
 							className={`rounded-xl border p-4 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md ${
 								selected.id === p.id
-									? "ring-2 ring-primary"
+									? "ring-2 ring-primary bg-white"
 									: ""
 							}`}
 							onClick={() => handlePlanSelect(p)}

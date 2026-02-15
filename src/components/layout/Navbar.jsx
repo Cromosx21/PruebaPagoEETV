@@ -5,7 +5,8 @@ import Flag from "react-world-flags";
 
 export default function Navbar() {
 	const [open, setOpen] = useState(false);
-	const { currency, setCurrency, currencies, flags } = useCurrency();
+	const { currency, setCurrency, currencies, flags, isWorldCurrency } =
+		useCurrency();
 	const [currencyOpen, setCurrencyOpen] = useState(false);
 	const dropdownRef = useRef(null);
 
@@ -29,7 +30,7 @@ export default function Navbar() {
 		<header className="sticky top-0 z-50 bg-light/80 backdrop-blur border-b border-slate-200">
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="flex items-center justify-between h-16">
-					<a href="#" className="flex items-center gap-2">
+					<a href="/" className="flex items-center gap-2">
 						<img
 							src={LogoEETV}
 							alt="Logo EasyEnglishTV"
@@ -38,22 +39,28 @@ export default function Navbar() {
 					</a>
 					<nav className="hidden md:flex items-center gap-6">
 						<a
-							href="#horario"
+							href="/#horario"
 							className="hover:text-primary transition-colors duration-200"
 						>
 							Horario
 						</a>
 						<a
-							href="#beneficios"
+							href="/#beneficios"
 							className="hover:text-primary transition-colors duration-200"
 						>
 							¿Cómo funciona?
 						</a>
 						<a
-							href="#planes"
+							href="/#planes"
 							className="hover:text-primary transition-colors duration-200"
 						>
 							Planes
+						</a>
+						<a
+							href="/#subscribe"
+							className="hover:text-primary transition-colors duration-200"
+						>
+							Suscribirme
 						</a>
 					</nav>
 					<div className="flex items-center gap-3">
@@ -63,11 +70,17 @@ export default function Navbar() {
 								onClick={() => setCurrencyOpen(!currencyOpen)}
 								className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 py-1.5 pl-3 pr-2 rounded-lg hover:border-primary transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20"
 							>
-								<div className="w-6 h-4 relative overflow-hidden rounded-[2px] shadow-sm">
-									<Flag
-										code={flags[currency]}
-										className="absolute inset-0 w-full h-full object-cover"
-									/>
+								<div className="w-6 h-4 relative overflow-hidden rounded-[2px] shadow-sm flex items-center justify-center bg-slate-50">
+									{isWorldCurrency ? (
+										<span className="text-[10px] font-semibold text-slate-700">
+											🌎
+										</span>
+									) : (
+										<Flag
+											code={flags[currency]}
+											className="absolute inset-0 w-full h-full object-cover"
+										/>
+									)}
 								</div>
 								<span className="text-sm font-medium">
 									{currency}
@@ -98,11 +111,18 @@ export default function Navbar() {
 													: "text-slate-700"
 											}`}
 										>
-											<div className="w-6 h-4 relative overflow-hidden rounded-[2px] shadow-sm flex-shrink-0">
-												<Flag
-													code={flags[curr]}
-													className="absolute inset-0 w-full h-full object-cover"
-												/>
+											<div className="w-6 h-4 relative overflow-hidden rounded-[2px] shadow-sm flex-shrink-0 flex items-center justify-center bg-slate-50">
+												{curr === "USD" &&
+												isWorldCurrency ? (
+													<span className="text-[10px] font-semibold text-slate-700">
+														🌎
+													</span>
+												) : (
+													<Flag
+														code={flags[curr]}
+														className="absolute inset-0 w-full h-full object-cover"
+													/>
+												)}
 											</div>
 											{curr}
 										</button>
@@ -112,7 +132,7 @@ export default function Navbar() {
 						</div>
 
 						<a
-							href="#suscribete"
+							href="/#subscribe"
 							className="hidden sm:inline-block rounded-lg bg-primary text-white px-4 py-2 hover:bg-primary/90 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
 						>
 							Suscríbete
@@ -148,25 +168,25 @@ export default function Navbar() {
 					<div className="md:hidden pb-4">
 						<div className="flex flex-col gap-2">
 							<a
-								href="#horario"
+								href="/#horario"
 								className="px-2 py-2 rounded hover:bg-slate-100 transition-colors duration-200"
 							>
 								Horario
 							</a>
 							<a
-								href="#planes"
+								href="/#planes"
 								className="px-2 py-2 rounded hover:bg-slate-100 transition-colors duration-200"
 							>
 								Planes
 							</a>
 							<a
-								href="#beneficios"
+								href="/#beneficios"
 								className="px-2 py-2 rounded hover:bg-slate-100 transition-colors duration-200"
 							>
 								Beneficios
 							</a>
 							<a
-								href="#suscribete"
+								href="/#subscribe"
 								className="px-2 py-2 rounded bg-primary text-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
 							>
 								Suscríbete

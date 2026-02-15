@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Evitar indexar páginas de prueba o privadas (ajustar si aplica)
+Disallow: /admin
+Disallow: /api
+
+Sitemap: https://prueba-pago-eetv.vercel.app/sitemap.xml

@@ -5,12 +5,17 @@ export default function Hero() {
 				<div className="grid lg:grid-cols-2 gap-10 items-center">
 					<div>
 						<h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
-							Aprende Inglés con Jessica de manera chévere y
-							gratuita
+							Domina el idioma con
+							<span className="text-secondary uppercase">
+								{" "}
+								Inglés con Amor
+							</span>
+							, el método más completo y dinámico
 						</h1>
 						<p className="mt-4 text-lg text-slate-600">
-							Disfruta de clases en vivo y adquiere material
-							exclusivo para potenciar tu aprendizaje.
+							Aprende en vivo y accede a material exclusivo
+							diseñado para acelerar tu fluidez desde el primer
+							día.
 						</p>
 						<div className="mt-8 flex flex-wrap gap-3">
 							<a
@@ -39,7 +44,14 @@ export default function Hero() {
 					</div>
 					<div className="relative">
 						<div className="border-b-8 border-primary ">
-							<img src="./Hero-jessica.png" alt="" />
+							<img
+								src="./Hero-jessica.png"
+								alt="Jessica enseñando inglés en EasyEnglishTV"
+								loading="eager"
+								width="1200"
+								height="800"
+								className="w-full h-auto"
+							/>
 						</div>
 					</div>
 				</div>

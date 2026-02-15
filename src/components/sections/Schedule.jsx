@@ -1,4 +1,5 @@
 import Flag from "react-world-flags";
+import VideoRender from "../ui/VideoRender";
 
 const anchorHour = 19;
 const peruLabel = "07:00 pm";
@@ -27,11 +28,10 @@ export default function Schedule() {
 			<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 				<div className="grid lg:grid-cols-2 gap-10 items-center">
 					<div className="order-2 lg:order-1">
-						<div className="relative h-[380px] rounded-2xl overflow-hidden -rotate-1 shadow-xl shadow-neutral-400">
-							<img
-								src="./ClassYoutube.png"
-								alt="Personas de distintos países felices por aprender inglés"
-								className="w-full h-full object-cover "
+						<div className="relative h-fit rounded-2xl overflow-hidden -rotate-1 shadow-xl shadow-neutral-400">
+							<VideoRender
+								videoId="PLZpSrH0_JyRNOUx64Hkzf1hMCJ2xQqgUU"
+								title="Playlist Inglés con Amor - EasyEnglishTV"
 							/>
 						</div>
 					</div>
@@ -60,7 +60,7 @@ export default function Schedule() {
 												>
 													{d}
 												</span>
-											)
+											),
 										)}
 									</div>
 								</div>
@@ -112,8 +112,8 @@ export default function Schedule() {
 													? peruLabel
 													: formatHour(
 															anchorHour +
-																c.offset
-													  )}
+																c.offset,
+														)}
 											</span>
 										</div>
 									))}
