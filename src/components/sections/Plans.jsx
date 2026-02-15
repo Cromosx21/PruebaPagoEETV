@@ -178,7 +178,7 @@ export default function Plans() {
 								</span>
 							</li>
 							<li className="flex gap-3">
-								<CrossIcon/>
+								<CrossIcon />
 								<span className="text-sm text-slate-400">
 									Acceso ilimitado de por vida
 								</span>
@@ -262,7 +262,7 @@ export default function Plans() {
 						</ul>
 
 						<a
-							href="#suscribete"
+							href="#subscribe"
 							className="w-full block text-center rounded-lg bg-secondary text-white px-5 py-3 hover:bg-secondary/90 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md font-medium"
 						>
 							Comprar ahora

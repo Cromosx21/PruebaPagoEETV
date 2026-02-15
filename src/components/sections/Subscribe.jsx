@@ -1,41 +1,18 @@
 import { useEffect, useState } from "react";
 import { useCurrency } from "../../context/CurrencyContext";
-import IcoFacebook from "../../assets/SocialMedia/IcoFacebook.svg?react";
-import IcoYouTube from "../../assets/SocialMedia/IcoYoutube.svg?react";
 import { initMercadoPago, Wallet } from "@mercadopago/sdk-react";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const mpPublicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
 
-const PLANS = [
-	{
-		id: "mensual",
-		name: "Plan Mensual",
-		amount: "6.00",
-		currency: "USD",
-		paypalAmount: "6.00",
-		color: "primary",
-		allowedMethods: ["facebook"],
-	},
-	{
-		id: "oro",
-		name: "Plan ORO",
-		amount: "8.00",
-		currency: "USD",
-		paypalAmount: "8.00",
-		color: "accent",
-		allowedMethods: ["youtube"],
-	},
-	{
-		id: "unico",
-		name: "Plan Único",
-		amount: "50.00",
-		currency: "USD",
-		paypalAmount: "50.00",
-		color: "secondary",
-		allowedMethods: ["paypal", "mercadopago", "qr"],
-	},
-];
+const DEFAULT_PLAN = {
+	id: "unico",
+	name: "Plan Único",
+	amount: "50.00",
+	currency: "USD",
+	paypalAmount: "50.00",
+	allowedMethods: ["paypal", "mercadopago", "qr"],
+};
 
 /**
  * Componente principal de suscripción.
@@ -50,17 +27,10 @@ export default function Subscribe() {
 	}, []);
 
 	const { formatPrice, currency, rates } = useCurrency();
-	const [selected, setSelected] = useState(PLANS[2]);
 	const [status, setStatus] = useState("");
-	const [method, setMethod] = useState(PLANS[2].allowedMethods[0]);
+	const [method, setMethod] = useState(DEFAULT_PLAN.allowedMethods[0]);
 	const [preferenceId, setPreferenceId] = useState(null);
 	const [email, setEmail] = useState("");
-
-	const colorClasses = {
-		primary: "bg-primary",
-		secondary: "bg-secondary",
-		accent: "bg-accent",
-	};
 
 	const whatsappNumber = (import.meta.env.VITE_WHATSAPP_NUMBER || "")
 		.toString()
@@ -70,13 +40,6 @@ export default function Subscribe() {
 	// Obtener ID de Cliente de PayPal (Sandbox o Live)
 	// NOTA: Para cuenta personal, usar el Client ID generado en developer.paypal.com con dicha cuenta.
 	const paypalClientId = import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb";
-
-	const handlePlanSelect = (plan) => {
-		setSelected(plan);
-		if (!plan.allowedMethods.includes(method)) {
-			setMethod(plan.allowedMethods[0]);
-		}
-	};
 
 	const isValidEmail = (email) => {
 		return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -144,18 +107,13 @@ export default function Subscribe() {
 		let isMounted = true;
 		let timeoutId;
 
-		if (
-			method === "mercadopago" &&
-			selected &&
-			selected.id === "unico" &&
-			isValidEmail(email)
-		) {
+		if (method === "mercadopago" && isValidEmail(email)) {
 			timeoutId = setTimeout(() => {
 				localStorage.setItem("pending_payment_email", email);
-				localStorage.setItem("pending_payment_plan", selected.name);
+				localStorage.setItem("pending_payment_plan", DEFAULT_PLAN.name);
 
-				let finalPrice = parseFloat(selected.amount);
-				let finalCurrency = "USD";
+				let finalPrice = parseFloat(DEFAULT_PLAN.amount);
+				let finalCurrency = DEFAULT_PLAN.currency;
 
 				if (currency === "PEN") {
 					const rate = rates["PEN"] || 3.75;
@@ -167,8 +125,8 @@ export default function Subscribe() {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
-						planId: selected.id,
-						title: selected.name,
+						planId: DEFAULT_PLAN.id,
+						title: DEFAULT_PLAN.name,
 						price: finalPrice,
 						currency_id: finalCurrency,
 						email: email,
@@ -203,7 +161,9 @@ export default function Subscribe() {
 			isMounted = false;
 			if (timeoutId) clearTimeout(timeoutId);
 		};
-	}, [method, selected, email, currency, rates]);
+	}, [method, email, currency, rates, preferenceId]);
+
+	const currentStep = status ? 3 : 2;
 
 	return (
 		<section id="subscribe" className="py-16 bg-slate-50">
@@ -215,390 +175,334 @@ export default function Subscribe() {
 					</p>
 				</div>
 
-				<div className="mt-8 grid md:grid-cols-3 gap-6">
-					{PLANS.map((p) => (
-						<button
-							key={p.id}
-							className={`rounded-xl border p-4 text-left transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md ${
-								selected.id === p.id
-									? "ring-2 ring-primary bg-white"
-									: ""
-							}`}
-							onClick={() => handlePlanSelect(p)}
-						>
-							<div className="flex items-center justify-between">
-								<div>
-									<div className="text-lg font-semibold">
-										{p.name}
+				<div className="mt-8 max-w-3xl mx-auto">
+					<div className="relative flex items-center justify-between gap-4">
+						<div className="absolute inset-x-10 top-1/2 h-0.5 -translate-y-1/2 bg-slate-200"></div>
+						{[
+							"Escoge tu plan",
+							"Escoge método de pago",
+							"Confirmación del material",
+						].map((label, index) => {
+							const step = index + 1;
+							const isCompleted = step < currentStep;
+							const isActive = step === currentStep;
+
+							return (
+								<div
+									key={label}
+									className="relative flex-1 flex flex-col items-center text-center"
+								>
+									<div
+										className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs font-semibold ${
+											isCompleted
+												? "bg-green-500 border-green-500 text-white"
+												: isActive
+													? "bg-primary border-primary text-white"
+													: "bg-white border-slate-300 text-slate-600"
+										}`}
+									>
+										{isCompleted ? "✓" : step}
 									</div>
-									<div className="mt-1 text-sm text-slate-600">
-										{formatPrice(parseFloat(p.amount))}
-									</div>
+									<span
+										className={`mt-2 text-xs sm:text-sm font-medium ${
+											isActive
+												? "text-slate-900"
+												: "text-slate-500"
+										}`}
+									>
+										{label}
+									</span>
 								</div>
-								<span
-									className={`inline-block h-6 w-6 rounded ${
-										colorClasses[p.color]
-									}`}
-								></span>
-							</div>
-						</button>
-					))}
+							);
+						})}
+					</div>
 				</div>
 
-				{selected.allowedMethods.length === 1 ? (
-					<div className="mt-10 max-w-3xl mx-auto">
-						<div className="rounded-2xl border bg-white p-10 shadow-sm text-center">
-							{method === "facebook" && (
-								<div className="flex flex-col items-center">
-									<IcoFacebook className="w-24 h-24 text-[#1877F2] mb-6" />
-									<h3 className="text-2xl font-bold mb-2">
-										Suscríbete por Facebook
-									</h3>
-									<p className="text-slate-600 mb-8 text-lg max-w-lg">
-										Únete a nuestra comunidad exclusiva en
-										Facebook para acceder a las clases de
-										este plan.
-									</p>
-									<a
-										href="https://www.facebook.com/EasyEnglishTv.1"
-										target="_blank"
-										rel="noreferrer"
-										className="inline-flex items-center justify-center rounded-xl bg-[#1877F2] text-white px-10 py-4 hover:bg-[#166fe5] transition-all duration-200 font-bold text-xl shadow-lg hover:shadow-xl hover:-translate-y-1"
-									>
-										Suscribirme en Facebook
-									</a>
-									<p className="mt-6 text-sm text-slate-500">
-										Serás redirigido a Facebook. Busca el
-										botón "Suscribirse".
-									</p>
-								</div>
+				<div className="mt-10 max-w-3xl mx-auto grid md:grid-cols-5 gap-6">
+					<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2">
+						<div className="text-lg font-semibold">
+							Método de pago
+						</div>
+						<div className="mt-4 flex flex-wrap gap-2">
+							{DEFAULT_PLAN.allowedMethods.includes("paypal") && (
+								<button
+									type="button"
+									onClick={() => setMethod("paypal")}
+									className={`px-3 py-2 rounded-lg border ${
+										method === "paypal"
+											? "bg-primary text-white border-primary"
+											: "bg-white text-slate-700"
+									}`}
+								>
+									PayPal
+								</button>
 							)}
-
-							{method === "youtube" && (
-								<div className="flex flex-col items-center">
-									<IcoYouTube className="w-24 h-24 text-[#FF0000] mb-6" />
-									<h3 className="text-2xl font-bold mb-2">
-										Suscríbete por YouTube
-									</h3>
-									<p className="text-slate-600 mb-8 text-lg max-w-lg">
-										Conviértete en miembro del canal para
-										acceder a los beneficios del Plan ORO.
-									</p>
-									<a
-										href="https://www.youtube.com/channel/UCzxP2uldBPoaOdS-vhuGYzg/join"
-										target="_blank"
-										rel="noreferrer"
-										className="inline-flex items-center justify-center rounded-xl bg-[#FF0000] text-white px-10 py-4 hover:bg-[#e60000] transition-all duration-200 font-bold text-xl shadow-lg hover:shadow-xl hover:-translate-y-1"
-									>
-										Unirme en YouTube
-									</a>
-									<p className="mt-6 text-sm text-slate-500">
-										Serás redirigido a YouTube para
-										completar tu membresía.
-									</p>
-								</div>
+							{DEFAULT_PLAN.allowedMethods.includes(
+								"mercadopago",
+							) && (
+								<button
+									type="button"
+									onClick={() => setMethod("mercadopago")}
+									className={`px-3 py-2 rounded-lg border ${
+										method === "mercadopago"
+											? "bg-primary text-white border-primary"
+											: "bg-white text-slate-700"
+									}`}
+								>
+									Mercado Pago
+								</button>
+							)}
+							{DEFAULT_PLAN.allowedMethods.includes("qr") && (
+								<button
+									type="button"
+									onClick={() => setMethod("qr")}
+									className={`px-3 py-2 rounded-lg border ${
+										method === "qr"
+											? "bg-primary text-white border-primary"
+											: "bg-white text-slate-700"
+									}`}
+								>
+									QR (Yape/Plin)
+								</button>
 							)}
 						</div>
 					</div>
-				) : (
-					<div className="mt-10 grid md:grid-cols-4 gap-6">
-						<div className="rounded-2xl border bg-white p-6 shadow-sm">
-							<div className="text-lg font-semibold">
-								Método de pago
-							</div>
-							<div className="mt-4 flex flex-wrap gap-2">
-								{selected.allowedMethods.includes("paypal") && (
-									<button
-										type="button"
-										onClick={() => setMethod("paypal")}
-										className={`px-3 py-2 rounded-lg border ${
-											method === "paypal"
-												? "bg-primary text-white border-primary"
-												: "bg-white text-slate-700"
-										}`}
-									>
-										PayPal
-									</button>
-								)}
-								{selected.allowedMethods.includes(
-									"mercadopago",
-								) && (
-									<button
-										type="button"
-										onClick={() => setMethod("mercadopago")}
-										className={`px-3 py-2 rounded-lg border ${
-											method === "mercadopago"
-												? "bg-primary text-white border-primary"
-												: "bg-white text-slate-700"
-										}`}
-									>
-										Mercado Pago
-									</button>
-								)}
-								{selected.allowedMethods.includes("qr") && (
-									<button
-										type="button"
-										onClick={() => setMethod("qr")}
-										className={`px-3 py-2 rounded-lg border ${
-											method === "qr"
-												? "bg-primary text-white border-primary"
-												: "bg-white text-slate-700"
-										}`}
-									>
-										QR (Yape/Plin)
-									</button>
-								)}
-							</div>
-						</div>
 
-						<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-2 relative">
-							{/* Email Input for Payment Methods */}
-							{(method === "mercadopago" ||
-								method === "paypal") && (
-								<div className="mb-6">
-									<label className="block text-sm font-medium text-slate-700 mb-1">
-										Correo Electrónico (Para recibir tu
-										material)
-									</label>
-									<input
-										type="email"
-										value={email}
-										onChange={(e) =>
-											setEmail(e.target.value)
-										}
-										placeholder="tu@correo.com"
-										className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-									/>
-									{!isValidEmail(email) &&
-										email.length > 0 && (
-											<p className="text-red-500 text-xs mt-1">
-												Ingresa un correo válido
-											</p>
+					<div className="rounded-2xl border bg-white p-6 shadow-sm md:col-span-3 relative">
+						{/* Email Input for Payment Methods */}
+						{(method === "mercadopago" || method === "paypal") && (
+							<div className="mb-6">
+								<label className="block text-sm font-medium text-slate-700 mb-1">
+									Correo Electrónico (Para recibir tu
+									material)
+								</label>
+								<input
+									type="email"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									placeholder="tu@correo.com"
+									className="w-full rounded-lg border px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
+								/>
+								{!isValidEmail(email) && email.length > 0 && (
+									<p className="text-red-500 text-xs mt-1">
+										Ingresa un correo válido
+									</p>
+								)}
+							</div>
+						)}
+
+						{/* PayPal */}
+						{method === "paypal" && (
+							<>
+								<div className="text-lg font-semibold">
+									Pagar con PayPal
+								</div>
+								<div className="mt-1 text-sm text-slate-600">
+									Monto:{" "}
+									{formatPrice(
+										parseFloat(DEFAULT_PLAN.amount),
+									)}{" "}
+									{currency !== "USD" &&
+										`(aprox. $${DEFAULT_PLAN.amount} USD)`}
+								</div>
+								<div className="mt-4">
+									{!isValidEmail(email) ? (
+										<button
+											disabled
+											className="w-full py-3 rounded-full bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
+										>
+											Pagar con PayPal
+										</button>
+									) : (
+										<PayPalScriptProvider
+											options={{
+												"client-id": paypalClientId,
+												currency: "USD",
+											}}
+										>
+											<PayPalButtons
+												style={{
+													layout: "horizontal",
+													shape: "pill",
+													color: "gold",
+												}}
+												createOrder={(_, actions) => {
+													return actions.order.create(
+														{
+															purchase_units: [
+																{
+																	amount: {
+																		value: DEFAULT_PLAN.paypalAmount,
+																		currency_code:
+																			"USD",
+																	},
+																	description:
+																		DEFAULT_PLAN.name,
+																},
+															],
+														},
+													);
+												}}
+												onApprove={async (
+													_,
+													actions,
+												) => {
+													const details =
+														await actions.order.capture();
+													setStatus(
+														"Procesando envío de material...",
+													);
+
+													// Enviar correo
+													fetch(
+														"/api/send-material",
+														{
+															method: "POST",
+															headers: {
+																"Content-Type":
+																	"application/json",
+															},
+															body: JSON.stringify(
+																{
+																	email: details
+																		.payer
+																		.email_address,
+																	name: details
+																		.payer
+																		.name
+																		.given_name,
+																	planName:
+																		DEFAULT_PLAN.name,
+																},
+															),
+														},
+													)
+														.then((res) =>
+															res.json(),
+														)
+														.then(() => {
+															setStatus(
+																`¡Pago aprobado! Material enviado a ${details.payer.email_address}.`,
+															);
+														})
+														.catch(() => {
+															setStatus(
+																`Pago aprobado, pero hubo un error enviando el correo. ID: ${details.id}`,
+															);
+														});
+												}}
+												onError={() =>
+													setStatus(
+														"Error procesando el pago con PayPal",
+													)
+												}
+											/>
+										</PayPalScriptProvider>
+									)}
+
+									{/* Advertencia solo si estamos en Sandbox explícitamente */}
+									{isValidEmail(email) &&
+										paypalClientId === "sb" && (
+											<div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+												<strong>Modo de Prueba:</strong>{" "}
+												Usa una cuenta Sandbox de PayPal
+												para probar.
+											</div>
 										)}
 								</div>
-							)}
+								{!isValidEmail(email) && (
+									<p className="text-sm text-amber-600 mt-2">
+										Ingresa tu correo arriba para activar el
+										botón.
+									</p>
+								)}
+							</>
+						)}
 
-							{/* PayPal */}
-							{method === "paypal" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con PayPal
-									</div>
-									<div className="mt-1 text-sm text-slate-600">
-										Monto:{" "}
-										{formatPrice(
-											parseFloat(selected.amount),
-										)}{" "}
-										{currency !== "USD" &&
-											`(aprox. $${selected.amount} USD)`}
-									</div>
-									<div className="mt-4">
-										{!isValidEmail(email) ? (
-											<button
-												disabled
-												className="w-full py-3 rounded-full bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
-											>
-												Pagar con PayPal
-											</button>
-										) : (
-											<PayPalScriptProvider
-												options={{
-													"client-id": paypalClientId,
-													currency: "USD",
-												}}
-											>
-												<PayPalButtons
-													style={{
-														layout: "horizontal",
-														shape: "pill",
-														color: "gold",
-													}}
-													createOrder={(
-														_,
-														actions,
-													) => {
-														return actions.order.create(
-															{
-																purchase_units:
-																	[
-																		{
-																			amount: {
-																				value: selected.paypalAmount,
-																				currency_code:
-																					"USD",
-																			},
-																			description:
-																				selected.name,
-																		},
-																	],
-															},
-														);
-													}}
-													onApprove={async (
-														_,
-														actions,
-													) => {
-														const details =
-															await actions.order.capture();
-														setStatus(
-															"Procesando envío de material...",
-														);
-
-														// Enviar correo
-														fetch(
-															"/api/send-material",
-															{
-																method: "POST",
-																headers: {
-																	"Content-Type":
-																		"application/json",
-																},
-																body: JSON.stringify(
-																	{
-																		email: details
-																			.payer
-																			.email_address,
-																		name: details
-																			.payer
-																			.name
-																			.given_name,
-																		planName:
-																			selected.name,
-																	},
-																),
-															},
-														)
-															.then((res) =>
-																res.json(),
-															)
-															.then(() => {
-																setStatus(
-																	`¡Pago aprobado! Material enviado a ${details.payer.email_address}.`,
-																);
-															})
-															.catch(() => {
-																setStatus(
-																	`Pago aprobado, pero hubo un error enviando el correo. ID: ${details.id}`,
-																);
-															});
-													}}
-													onError={() =>
-														setStatus(
-															"Error procesando el pago con PayPal",
-														)
-													}
-												/>
-											</PayPalScriptProvider>
-										)}
-
-										{/* Advertencia solo si estamos en Sandbox explícitamente */}
-										{isValidEmail(email) &&
-											paypalClientId === "sb" && (
-												<div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
-													<strong>
-														Modo de Prueba:
-													</strong>{" "}
-													Usa una cuenta Sandbox de
-													PayPal para probar.
-												</div>
-											)}
-									</div>
+						{/* Mercado Pago */}
+						{method === "mercadopago" && (
+							<>
+								<div className="text-lg font-semibold">
+									Pagar con Mercado Pago
+								</div>
+								<div className="mt-1 text-sm text-slate-600">
+									Procesado por Mercado Pago. Se cobrará en
+									PEN/USD según configuración.
+								</div>
+								<div className="mt-4">
+									{isValidEmail(email) && preferenceId ? (
+										<Wallet
+											key={preferenceId}
+											initialization={{
+												preferenceId: preferenceId,
+												redirectMode: "modal",
+											}}
+											customization={{
+												texts: {
+													valueProp: "smart_option",
+												},
+											}}
+										/>
+									) : (
+										<button
+											disabled
+											className="w-full py-3 rounded-lg bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
+										>
+											Pagar con Mercado Pago
+										</button>
+									)}
 									{!isValidEmail(email) && (
 										<p className="text-sm text-amber-600 mt-2">
 											Ingresa tu correo arriba para
 											activar el botón.
 										</p>
 									)}
-								</>
-							)}
+								</div>
+							</>
+						)}
 
-							{/* Mercado Pago */}
-							{method === "mercadopago" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con Mercado Pago
-									</div>
-									<div className="mt-1 text-sm text-slate-600">
-										Procesado por Mercado Pago. Se cobrará
-										en PEN/USD según configuración.
-									</div>
-									<div className="mt-4">
-										{isValidEmail(email) && preferenceId ? (
-											<Wallet
-												key={preferenceId}
-												initialization={{
-													preferenceId: preferenceId,
-													redirectMode: "modal",
-												}}
-												customization={{
-													texts: {
-														valueProp:
-															"smart_option",
-													},
-												}}
+						{/* QR */}
+						{method === "qr" && (
+							<>
+								<div className="text-lg font-semibold">
+									Pagar con QR (Yape/Plin)
+								</div>
+								<div className="mt-4 grid md:grid-cols-2 gap-4">
+									<div className="rounded-lg border p-4">
+										<div className="mt-2">
+											<img
+												src={yapeQr}
+												alt="QR Yape"
+												className="w-full rounded"
 											/>
-										) : (
-											<button
-												disabled
-												className="w-full py-3 rounded-lg bg-slate-200 text-slate-400 font-bold cursor-not-allowed border border-slate-300"
-											>
-												Pagar con Mercado Pago
-											</button>
-										)}
-										{!isValidEmail(email) && (
-											<p className="text-sm text-amber-600 mt-2">
-												Ingresa tu correo arriba para
-												activar el botón.
-											</p>
-										)}
-									</div>
-								</>
-							)}
-
-							{/* QR */}
-							{method === "qr" && (
-								<>
-									<div className="text-lg font-semibold">
-										Pagar con QR (Yape/Plin)
-									</div>
-									<div className="mt-4 grid md:grid-cols-2 gap-4">
-										<div className="rounded-lg border p-4">
-											<div className="mt-2">
-												<img
-													src={yapeQr}
-													alt="QR Yape"
-													className="w-full rounded"
-												/>
-											</div>
-											<div className="mt-2 text-sm text-slate-700">
-												Nombre: Jessica Milagros Zena
-												Torres
-											</div>
+										</div>
+										<div className="mt-2 text-sm text-slate-700">
+											Nombre: Jessica Milagros Zena Torres
 										</div>
 									</div>
-									<button
-										type="button"
-										className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 w-full hover:bg-green-700 transition-colors"
-										onClick={() => {
-											const msg = encodeURIComponent(
-												`Hola, envié mi comprobante de pago por QR para el ${selected.name}.`,
-											);
-											window.open(
-												`https://wa.me/${whatsappNumber.replace(
-													/[^+\d]/g,
-													"",
-												)}?text=${msg}`,
-												"_blank",
-											);
-										}}
-									>
-										Enviar voucher por WhatsApp
-									</button>
-								</>
-							)}
-						</div>
+								</div>
+								<button
+									type="button"
+									className="mt-4 rounded-lg bg-green-600 text-white px-5 py-3 w-full hover:bg-green-700 transition-colors"
+									onClick={() => {
+										const msg = encodeURIComponent(
+											`Hola, envié mi comprobante de pago por QR para el ${DEFAULT_PLAN.name}.`,
+										);
+										window.open(
+											`https://wa.me/${whatsappNumber.replace(
+												/[^+\d]/g,
+												"",
+											)}?text=${msg}`,
+											"_blank",
+										);
+									}}
+								>
+									Enviar voucher por WhatsApp
+								</button>
+							</>
+						)}
 					</div>
-				)}
+				</div>
 
 				{status && (
 					<div

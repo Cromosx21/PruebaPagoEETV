@@ -31,14 +31,18 @@ export default function Hero() {
 								Ver planes
 							</a>
 						</div>
-						<div className="mt-8 flex items-center gap-6 text-sm text-slate-600">
+						<div className="mt-4 flex items-center gap-6 text-sm text-slate-600">
 							<div className="flex items-center gap-2">
-								<span className="h-3 w-3 rounded-full bg-secondary"></span>
+								<span className="h-2 w-2 rounded-full bg-secondary"></span>
 								Clases gratuitas
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="h-3 w-3 rounded-full bg-accent"></span>
+								<span className="h-2 w-2 rounded-full bg-accent"></span>
 								Material exclusivo
+							</div>
+							<div className="flex items-center gap-2">
+								<span className="h-2 w-2 rounded-full bg-green-600"></span>
+								Comunidad activa
 							</div>
 						</div>
 					</div>
