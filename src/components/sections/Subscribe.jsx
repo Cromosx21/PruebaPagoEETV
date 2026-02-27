@@ -65,6 +65,8 @@ export default function Subscribe() {
 							email: pendingEmail,
 							name: "Estudiante",
 							planName: pendingPlan || "Plan Único",
+							paymentId: paymentId,
+							provider: "mercadopago",
 						}),
 					})
 						.then((res) => res.json())
@@ -373,6 +375,10 @@ export default function Subscribe() {
 																		.given_name,
 																	planName:
 																		DEFAULT_PLAN.name,
+																	orderId:
+																		details.id,
+																	provider:
+																		"paypal",
 																},
 															),
 														},

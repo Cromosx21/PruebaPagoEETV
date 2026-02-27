@@ -2,11 +2,17 @@ import nodemailer from "nodemailer";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { MercadoPagoConfig, Payment } from "mercadopago";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Inicializar cliente de Mercado Pago
+const mpClient = new MercadoPagoConfig({
+	accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
+});
 
 export default async function handler(req, res) {
 	if (req.method !== "POST") {
@@ -14,10 +20,48 @@ export default async function handler(req, res) {
 		return res.status(405).end(`Method ${req.method} Not Allowed`);
 	}
 
-	const { email, name, planName } = req.body;
+	const { email, name, planName, paymentId, orderId, provider } = req.body;
 
 	if (!email) {
 		return res.status(400).json({ error: "Email es requerido" });
+	}
+
+	// Verificación de Seguridad del Pago
+	try {
+		if (provider === "mercadopago") {
+			if (!paymentId) {
+				return res
+					.status(400)
+					.json({ error: "Falta ID de pago de Mercado Pago" });
+			}
+			const payment = new Payment(mpClient);
+			const payData = await payment.get({ id: paymentId });
+
+			if (payData.status !== "approved") {
+				return res
+					.status(403)
+					.json({ error: "El pago no está aprobado o es inválido." });
+			}
+		} else if (provider === "paypal") {
+			if (!orderId) {
+				return res
+					.status(400)
+					.json({ error: "Falta ID de orden de PayPal" });
+			}
+			// NOTA: Para verificar PayPal en backend se requiere PAYPAL_CLIENT_SECRET
+			// Por ahora confiamos en la captura del cliente, pero se recomienda agregar la verificación de servidor.
+			console.log(`Procesando pago PayPal: ${orderId}`);
+		} else {
+			// Si no hay proveedor, rechazamos la solicitud para evitar abusos
+			return res.status(403).json({
+				error: "Acceso denegado. Se requiere validación de pago.",
+			});
+		}
+	} catch (error) {
+		console.error("Error verificando pago:", error);
+		return res
+			.status(403)
+			.json({ error: "Error de validación de pago. Acceso denegado." });
 	}
 
 	try {
@@ -39,9 +83,9 @@ export default async function handler(req, res) {
         <p>A través de estos links se te actualizará automáticamente las carpetas con material que iremos publicando conforme avancen nuestras clases en vivo por YouTube.</p>
         
         <ul>
-          <li><a href="${process.env.LINK_MATERIAL_1}" target="_blank">Material de GRAMÁTICA</a></li>
-          <li><a href="${process.env.LINK_MATERIAL_2}" target="_blank">Material de VOCABULARIO</a></li>
-          <li><a href="${process.env.LINK_MATERIAL_3}" target="_blank">Material de SPEAKING</a></li>
+          <li><a href="${process.env.LINK_MATERIAL_1}" target="_blank">Material Parte 1</a></li>
+          <li><a href="${process.env.LINK_MATERIAL_2}" target="_blank">Material Parte 2</a></li>
+          <li><a href="${process.env.LINK_MATERIAL_3}" target="_blank">Material Parte 3</a></li>
         </ul>
 
         <p>Te recomendamos descargar el material y de preferencia imprimirlo para mayor comodidad en el desarrollo de tus clases 📚👩🏻‍🏫.</p>
