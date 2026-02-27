@@ -34,10 +34,17 @@ export default async function handler(req, res) {
 			to: email,
 			subject: `¡Gracias por tu compra del ${planName}! - Easy English TV`,
 			html: `
-        <h1>¡Hola ${name || "Estudiante"}!</h1>
-        <p>Gracias por adquirir el <strong>${planName}</strong>.</p>
-        <p>Adjunto encontrarás el material prometido. Por favor descárgalo y guárdalo en un lugar seguro.</p>
-        <p>Si tienes alguna duda, el material puede tardar hasta 24 horas en llegar en casos excepcionales. Si no lo recibes, contacta a soporte.</p>
+        <h1>👋 ¡Hola ${name || "Estudiante"}!</h1>
+        <p>Gracias por haber adquirido nuestro material <strong>INGLÉS CON AMOR (GRAMÁTICA, VOCABULARIO & SPEAKING)</strong>.</p>
+        <p>A través de estos links se te actualizará automáticamente las carpetas con material que iremos publicando conforme avancen nuestras clases en vivo por YouTube.</p>
+        
+        <ul>
+          <li><a href="${process.env.LINK_MATERIAL_1}" target="_blank">Material de GRAMÁTICA</a></li>
+          <li><a href="${process.env.LINK_MATERIAL_2}" target="_blank">Material de VOCABULARIO</a></li>
+          <li><a href="${process.env.LINK_MATERIAL_3}" target="_blank">Material de SPEAKING</a></li>
+        </ul>
+
+        <p>Te recomendamos descargar el material y de preferencia imprimirlo para mayor comodidad en el desarrollo de tus clases 📚👩🏻‍🏫.</p>
         <br>
         <p>Saludos,</p>
         <p>El equipo de Easy English TV</p>
